@@ -51,6 +51,5 @@ def main(path):
     observer.join()
 
 
-if __name__ == "_main__":
-    main(sys.argv[1] if len(sys.argv > 1) else ".")
-
+if __name__ == "__main__":
+    main(sys.argv[1] if len(sys.argv) > 1 else sys.argv[0])
