@@ -1,2 +1,1 @@
-# hunt-showdown-journal
-The Journals of Harold Black
+# The Journals of Harold Black
