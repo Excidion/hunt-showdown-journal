@@ -1,54 +1,38 @@
-from time import sleep
+from time import sleep, ctime
 from datetime import datetime
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 import os
-from shutil import copytree as copydir
 from shutil import copy2 as copyfile
 import sys
 
 
-class BackUpOnChange(FileSystemEventHandler):    
-    def __init__(self, *args, backup_path, **kwargs):
-        assert os.path.isdir(backup_path)
-        self.backup_path = backup_path
-        return super().__init__(*args, **kwargs)
-
-    def on_modified(self, event):
-        self.backup(event)
-        return super().on_modified(event)
-
-    def backup(self, event):
-        origin_path = event._src_path
-        destination_path = self.backup_path
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S%f")
-        if os.path.isfile(origin_path):
-            destination_path = os.path.join(
-                destination_path,
-                f"{os.path.basename(os.path.splitext(origin_path)[0])}_{timestamp}.{os.path.splitext(origin_path)[-1]}",
-            )
-            copyfile(origin_path, destination_path)
-        elif os.path.isdir(origin_path):
-            destination_path = os.path.join(
-                os.path.dirname(destination_path),
-                os.path.basename(f"{destination_path}_{timestamp}"),
-            )
-            copydir(origin_path, destination_path)
-        else:
-            ValueError(f"{origin_path} is neither file nor dir.")
-
-
-def main(path):
-    event_handler = BackUpOnChange(backup_path="./data")
-    observer = Observer()
-    observer.schedule(event_handler, path, recursive=True)
-    observer.start()
+def main(watched_file, backup_dir="./data"):
+    assert os.path.isdir(backup_dir)
     try:
-        while True:
-            sleep(1)
+        mainloop(watched_file, backup_dir)
     except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+        return
+
+def mainloop(watched_file, backup_dir):
+    last_modified = get_last_modified(watched_file)
+    while True: # mainlooop
+        while last_modified == get_last_modified(watched_file):
+            print(ctime(get_last_modified(watched_file)))
+            sleep(5)
+        else:
+            last_modified = get_last_modified(watched_file)
+            backup(watched_file, backup_dir) 
+
+
+def get_last_modified(path):
+    return os.path.getmtime(path)
+
+def backup(filepath, destination_dir):
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S%f")
+    destination_path = os.path.join(
+        destination_dir,
+        f"{os.path.basename(os.path.splitext(filepath)[0])}_{timestamp}.{os.path.splitext(filepath)[-1]}",
+    )
+    copyfile(filepath, destination_path)
 
 
 if __name__ == "__main__":
