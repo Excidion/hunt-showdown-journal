@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+TIMESTAMP_FORMAT = "%Y%m%d-%H%M%S%f"
+
 
 def main(watched_file, backup_dir="./data/raw"):
     assert os.path.isdir(backup_dir)
@@ -29,7 +31,7 @@ def get_last_modified(path):
     return os.path.getmtime(path)
 
 def backup(filepath, destination_dir):
-    timestamp = datetime.fromtimestamp(get_last_modified(filepath)).strftime("%Y%m%d-%H%M%S%f")
+    timestamp = datetime.fromtimestamp(get_last_modified(filepath)).strftime(TIMESTAMP_FORMAT)
     print(timestamp)
     destination_path = os.path.join(
         destination_dir,

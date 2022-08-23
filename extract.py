@@ -2,6 +2,9 @@ import xmltodict
 from itertools import product
 import pandas as pd
 from glob import glob
+from datetime import datetime
+import os
+from watcher import TIMESTAMP_FORMAT
 
 
 def main():
@@ -19,9 +22,12 @@ def main():
         else:
             data["matchno"] = matchno
             matchno += 1
+            # read timestamp from filename
+            timestamp = os.path.splitext(os.path.basename(path))[0].split("_")[-1]
+            data["datetime_match_ended"] = datetime.strptime(timestamp, TIMESTAMP_FORMAT)
             matches = pd.concat([matches, data.reset_index()], ignore_index=True)
     # drop duplicates
-    matches = matches.drop_duplicates(subset=matches.columns.difference(["matchno"]))
+    matches = matches.drop_duplicates(subset=matches.columns.difference(["matchno", "datetime_match_ended"]))
     matches["matchno"] = matches["matchno"].factorize()[0]
     # finish and save
     matches = matches.set_index(["matchno", "teamno", "playerno"])
@@ -29,10 +35,20 @@ def main():
 
 def parse_xml(xml):
     data = xmltodict.parse(xml)
-    kw = "MissionBag"
     # cleanup names and transform to usable dict
-    data = {x["@name"].replace(kw, ""): x["@value"] for x in data["Attributes"]["Attr"] if kw in x["@name"]}
-    # extract team data
+    data = {x["@name"]: x["@value"] for x in data["Attributes"]["Attr"]}
+    match = get_matche_data(data)
+    return match
+
+def get_matche_data(data):
+    kw = "MissionBag"
+    data = {x.replace(kw, ""): data[x] for x in data.keys() if kw in x}
+    teams = get_teams_data(data)
+    players = get_players_data(data, teams)
+    match = players.join(teams, rsuffix="_team")
+    return match
+
+def get_teams_data(data):
     n_teams = int(data["NumTeams"])
     teams = pd.DataFrame()
     for team in range(n_teams):
@@ -49,7 +65,9 @@ def parse_xml(xml):
     teams["handicap"] = teams["handicap"].astype(int)
     teams["numplayers"] = teams["numplayers"].astype(int)
     teams["ownteam"] = teams["ownteam"].apply(string_to_bool)
-    # extract player data
+    return teams
+
+def get_players_data(data, teams):
     players = pd.DataFrame()
     for team, subset in teams.groupby("teamno"):
         for player in range(subset["numplayers"].unique()[0]):
@@ -83,8 +101,8 @@ def parse_xml(xml):
     players["teamextraction"] = players["teamextraction"].apply(string_to_bool)
     # join team metatadata
     players = players.set_index(["teamno", "playerno"])
-    match = players.join(teams, rsuffix="_team")
-    return match
+    return players
+
 
 def sanity_check(data):
     data = data.reset_index()
@@ -97,6 +115,7 @@ def sanity_check(data):
     assert data["ispartner"].sum() <= largest_teamsize, "Too many teammates."
     # couting bounties
     assert data["bountyextracted"].dropna().astype(int).sum() <= 4, "Too many extracted bounties."
+
 
 def string_to_bool(string: str) -> bool:
     match(string.casefold()):
