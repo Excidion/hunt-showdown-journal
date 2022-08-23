@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def main(watched_file, backup_dir="./data"):
+def main(watched_file, backup_dir="./data/raw"):
     assert os.path.isdir(backup_dir)
     try:
         mainloop(watched_file, backup_dir)
