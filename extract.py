@@ -1,5 +1,4 @@
 import xmltodict
-from itertools import product
 import pandas as pd
 from glob import glob
 from datetime import datetime

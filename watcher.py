@@ -2,7 +2,6 @@ from time import sleep
 from datetime import datetime
 import os
 from shutil import copy2 as copyfile
-import sys
 from dotenv import load_dotenv
 
 load_dotenv()
