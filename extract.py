@@ -64,6 +64,7 @@ def get_teams_data(data):
     teams["handicap"] = teams["handicap"].astype(int)
     teams["numplayers"] = teams["numplayers"].astype(int)
     teams["ownteam"] = teams["ownteam"].apply(string_to_bool)
+    teams["isinvite"] = teams["isinvite"].apply(string_to_bool)
     return teams
 
 def get_players_data(data, teams):
