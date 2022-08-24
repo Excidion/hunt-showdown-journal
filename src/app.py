@@ -5,9 +5,10 @@ import os
 from watcher import FileBackupper
 from extract import main as parse_matchfiles
 from extract import parse_xml
-from plots import plot_mmr_hisotry
+from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate
 from dotenv import load_dotenv
 from glob import glob
+from match_utils import simplify_scoreboard
 
 load_dotenv()
 
@@ -133,8 +134,24 @@ if not os.path.exists(RESULTFILE):
 else:
     matches = pd.read_parquet(RESULTFILE).reset_index()
 
-
     st.header("Overall Statistics")
+
+    # metrics
+    trend_window = st.slider(
+        "# of new matches for trend",
+        value = 3,
+        min_value = 0,
+        max_value = int(matches["matchno"].max()),
+        step = 1,
+    )
+    columns = st.columns(4)
+    with columns[0]:
+        display_mmr(matches, trend_window)
+    with columns[1]:
+        display_KD(matches, trend_window)
+    with columns[2]:
+        display_extraction_rate(matches, trend_window)
+
     # MMR history
     st.subheader("MMR History")
     xaxis = st.radio(
@@ -157,21 +174,5 @@ else:
     for team, subset in selection.groupby("teamno"):
         # style team display
         st.caption(f"Team #{team+1} (MMR {subset.mmr_team.unique()[0]})")
-        subset["shotbyme"] = subset[["downedbyme", "killedbyme"]].sum(axis=1)
-        subset["shotme"] = subset[["downedme", "killedme",]].sum(axis=1)
-        subset["shotbyteammate"] = subset[["downedbyteammate", "killedbyteammate"]].sum(axis=1)
-        subset["shotteammate"] = subset[["downedteammate", "killedteammate"]].sum(axis=1)
-        subset = subset.reset_index(drop=True)[[
-            "blood_line_name",
-            "mmr",
-            "isinvite",
-            "hadbounty",
-            "bountyextracted",
-            "shotbyme",
-            "shotme",
-            "shotbyteammate",
-            "shotteammate",
-        ]]
+        subset = simplify_scoreboard(subset)
         st.dataframe(subset)
-
-

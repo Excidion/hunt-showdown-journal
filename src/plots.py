@@ -1,13 +1,55 @@
 from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
+from matplotlib import pyplot as plt
+from match_utils import simplify_scoreboard, get_me, get_own_team, get_up_to_n_last_matches
+import streamlit as st
+
+
+def display_mmr(df, trend_window=3):
+    df = get_me(df)
+    mmr = df["mmr"].iloc[-1]
+    mmr_old = df["mmr"].iloc[-trend_window]
+    st.metric(
+        "MMR",
+        mmr,
+        f"{mmr - mmr_old} in last {trend_window} matches"
+    )
+
+def display_extraction_rate(df, trend_window=3):
+    df = get_own_team(df)
+    df_old = get_up_to_n_last_matches(df, trend_window)
+    er = get_extraction_rate(df)
+    er_old = get_extraction_rate(df_old)
+    st.metric(
+        "Min. one bounty extracted",
+        f"{round(er * 100)}%",
+        f"{round((er - er_old) * 100)}% in last {trend_window} matches"
+    )
+
+def get_extraction_rate(df):
+    return df.groupby("matchno")["bountyextracted"].sum().astype(bool).sum() / df["matchno"].nunique()
+
+def display_KD(df, trend_window=3):
+    killed, died = get_KD(get_up_to_n_last_matches(df, trend_window))
+    kd_old = killed / died
+    killed, died = get_KD(df)
+    kd = killed / died
+    st.metric(
+        "K/D Ratio",
+        round(kd, 2),
+        f"{round(kd - kd_old, 2)} in last {trend_window} matches"
+    )
+
+def get_KD(df):
+    df = simplify_scoreboard(df)
+    killed = df["shotbyme"].sum()
+    died = df["shotme"].sum()
+    return killed, died
 
 
 def plot_mmr_hisotry(matches, xaxis):
-     # mmr history
-    solo = matches.loc[matches["ownteam"] & (matches["numplayers"] == 1)]
-    me = solo.profileid.unique()[0]
-    df = matches.loc[matches.profileid == me]
+    df = get_me(matches)
     # star rating
     levels = pd.DataFrame()
     levels[xaxis] = df[xaxis]
