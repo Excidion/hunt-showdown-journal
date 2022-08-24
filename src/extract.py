@@ -10,7 +10,8 @@ def main():
     matches = pd.DataFrame()
     files = sorted([filepath for filepath in glob("./data/raw/*.xml")])
     matchno = 0
-    for path in files:
+    for i, path in enumerate(files):
+        yield (i/len(files), path)
         with open(path, "r", errors="ignore") as infile:
             xml = infile.read()
         try:
