@@ -20,7 +20,7 @@ def mainloop(watched_file, backup_dir):
     last_modified = get_last_modified(watched_file)
     while True: # mainlooop
         while last_modified == get_last_modified(watched_file):
-            sleep(15)
+            sleep(60)
         else:
             last_modified = get_last_modified(watched_file)
             backup(watched_file, backup_dir) 
