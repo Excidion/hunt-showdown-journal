@@ -44,6 +44,7 @@ class FileBackupper(threading.Thread):
 def main(watched_file, backup_dir="./data/raw"):
     thread = FileBackupper(watched_file, backup_dir)
     thread.start()
+    print("Recorder active...")
     try:
         while True:
             sleep(2)

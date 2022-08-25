@@ -31,21 +31,21 @@ def construct_match_name(subset):
 def start_watcher_process():
     thread = st.session_state.get("watcher_process")
     if thread is not None:
-        st.warning("Data Collector already running.")
+        st.warning("Match Recorder already running.")
     else:
         thread = FileBackupper(st.session_state.get("watched_file"), "./data/raw")
         thread.start()
         st.session_state["watcher_process"] = thread
-        st.success("Data Collector started.")
+        st.success("Match Recorder started.")
 
 def stop_watcher_process():
     thread = st.session_state.get("watcher_process")
     if thread is None:
-        st.warning("Data Collector already stopped.")
+        st.warning("Match Recorder already stopped.")
     else:
         thread.stop()
         st.session_state["watcher_process"] = None
-        st.success("Data Collector stopped.")
+        st.success("Match Recorder stopped.")
 
 
 st.title("Hunt Journal")
@@ -56,7 +56,7 @@ with col0:
     # start game
     start_game = st.button("Play Hunt: Showdown!")
     also_start_filewatcher = st.checkbox(
-        label = "Start Data Collector with Game", 
+        label = "Start Match Recorder with Game", 
         value = True,
         disabled = not tracked_file_is_setup,
         help = "Can only be used if matchfile is tracked."
@@ -68,10 +68,10 @@ with col0:
             start_watcher_process()
 with col1:
     # start watcher proces by hand
-    if st.button("Start Data Colletor", disabled = not tracked_file_is_setup):
+    if st.button("Start Match Recorder", disabled = not tracked_file_is_setup):
         start_watcher_process()
     # kill watcher process
-    if st.button("Stop Data Collector", disabled = not tracked_file_is_setup):
+    if st.button("Stop Match Recorder", disabled = not tracked_file_is_setup):
         stop_watcher_process()
     
 
@@ -84,7 +84,7 @@ with col0:
         "On the right you can set the path of that file according to where you installed the game. \n\n",
         "Sadly, only the results of the last match are stored at a time. ",
         "But to calculate the statistics we need a history of all matches. ",
-        "Therefore the Data Collector will backup every change to the file. ",
+        "Therefore the Match Recorder will backup every change to the file. ",
     )
 with col1:
     filepath = st.text_input(
