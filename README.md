@@ -9,7 +9,7 @@ This app will help you track your progress in the game Hunt: Showdown.
 + Go into the new directory.
 + Right click on `setup.ps1` an choose *Run with Powershell*.
 + Right click into the directory and create a new text file and name it `.env`.
-+ Open the newly created file and add a line like the following.
++ Open the newly created file with a text editor (eg. notepad) and add a line like the following.
 **Make sure to change this path according to where you have installed the game.**
 ```
 watched_file=C:\Programs\steamapps\common\Hunt Showdown\user\profiles\default\attributes.xml
