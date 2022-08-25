@@ -4,7 +4,7 @@ This app will help you track your progress in the game Hunt: Showdown.
 + Install [Python 3.10.6](https://www.python.org/ftp/python/3.10.6/python-3.10.6-amd64.exe).
 **Important:** Make sure to set the option **Add Python to PATH** in the installation process.
 + Download the source code:
-    + **Option A**: By cloning this repository.
+    + **Option A**: By cloning this repository. (If you don't know how to do this, simply take Option B.)
     + **Option B**: Click on *Code* -> *Download ZIP* and unpack the downloaded files.
 + Go into the new directory.
 + Right click on `setup.ps1` an choose *Run with Powershell*.
