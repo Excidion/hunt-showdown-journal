@@ -139,11 +139,11 @@ else:
     # metrics
     trend_window = st.slider(
         "# of new matches for trend",
-        value = 3,
-        min_value = 0,
-        max_value = int(matches["matchno"].max()),
-        step = 1,
-    )
+            value = min(3, n_matches),
+            min_value = 1,
+            max_value = max(n_matches-1, 2),
+            step = 1,
+        )
     columns = st.columns(4)
     with columns[0]:
         display_mmr(matches, trend_window)
