@@ -31,10 +31,8 @@ def get_extraction_rate(df):
     return df.groupby("matchno")["bountyextracted"].sum().astype(bool).sum() / df["matchno"].nunique()
 
 def display_KD(df, trend_window=3):
-    killed, died = get_KD(get_up_to_n_last_matches(df, trend_window))
-    kd_old = killed / died
-    killed, died = get_KD(df)
-    kd = killed / died
+    kd_old = get_KD(get_up_to_n_last_matches(df, trend_window))
+    kd = get_KD(df)
     st.metric(
         "K/D Ratio",
         round(kd, 2),
@@ -44,8 +42,8 @@ def display_KD(df, trend_window=3):
 def get_KD(df):
     df = simplify_scoreboard(df)
     killed = df["shotbyme"].sum()
-    died = df["shotme"].sum()
-    return killed, died
+    died = max(df["shotme"].sum(), 1) # treat zero deaths as one to avoid dividing by zero
+    return killed / died
 
 
 def plot_mmr_hisotry(matches, xaxis):
