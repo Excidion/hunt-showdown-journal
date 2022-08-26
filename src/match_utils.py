@@ -6,8 +6,6 @@ def simplify_scoreboard(data):
     data = data.reset_index(drop=True)[[
         "blood_line_name",
         "mmr",
-        "isinvite",
-        "hadbounty",
         "bountyextracted",
         "shotbyme",
         "shotme",
