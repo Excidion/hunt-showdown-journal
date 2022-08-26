@@ -48,6 +48,7 @@ def get_KD(df):
 
 def plot_mmr_hisotry(matches, xaxis):
     df = get_me(matches)
+    df["matchno"] += 1
     # star rating
     levels = pd.DataFrame()
     levels[xaxis] = df[xaxis]

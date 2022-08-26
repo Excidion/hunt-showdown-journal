@@ -167,9 +167,10 @@ else:
     fig = plot_mmr_hisotry(matches, xaxis)
     st.plotly_chart(fig)
 
+
     st.header("Individual Match Statistics")
     # match table
-    match_display_names = {construct_match_name(subset): matchno for matchno, subset in matches.groupby("matchno")}
+    match_display_names = {f"{matchno+1}: {construct_match_name(subset)}": matchno for matchno, subset in matches.groupby("matchno")}
     selected_match = st.selectbox(
         label = "Select a Match",
         options = reversed(match_display_names.keys()),
@@ -177,6 +178,20 @@ else:
     selection = matches.loc[matches["matchno"] == match_display_names[selected_match]]
     for team, subset in selection.groupby("teamno"):
         # style team display
-        st.caption(f"Team #{team+1} (MMR {subset.mmr_team.unique()[0]})")
+        team_description = f"Team #{team+1} (MMR {subset.mmr_team.unique()[0]})"
+        if subset.ownteam.sum() > 1:
+            team_description += " - your Team"
+        st.caption(team_description)
         subset = simplify_scoreboard(subset)
-        st.dataframe(subset)
+        st.dataframe(
+            subset.style.applymap(
+                lambda x: f"color: {'green' if x > 0 else 'grey'}",
+            subset = ["shotbyme", "shotbyteammate"]
+            ).applymap(
+                lambda x: f"color: {'red' if x > 0 else 'grey'}",
+                subset = ["shotme", "shotteammate"]
+            ).applymap(
+                lambda x: f"color: {'blue' if x > 0 else 'grey'}",
+                subset = ["bountyextracted"]
+            )
+        )
