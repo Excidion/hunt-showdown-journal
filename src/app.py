@@ -137,13 +137,17 @@ else:
     st.header("Overall Statistics")
 
     # metrics
-    trend_window = st.slider(
-        "# of new matches for trend",
+    n_matches = int(matches["matchno"].nunique())
+    if n_matches > 2:
+        trend_window = st.slider(
+            "# of new matches for trend",
             value = min(3, n_matches),
             min_value = 1,
             max_value = max(n_matches-1, 2),
             step = 1,
         )
+    else:
+        trend_window = 1
     columns = st.columns(4)
     with columns[0]:
         display_mmr(matches, trend_window)
