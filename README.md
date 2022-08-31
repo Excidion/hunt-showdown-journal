@@ -24,7 +24,7 @@ Before starting the game, so your matches are recorded:
 Alternatively you can also start the Match Recorder via the app.
 This functionality is experimantal and not yet tested.
 
-### App for Analyze Matches
+### App to Analyze Matches
 When you want to analyze your recorded matches.
 + Go to the installation directory.
 + Right click on `app.ps1` an choose *Run with Powershell*.
