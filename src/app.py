@@ -128,9 +128,9 @@ else:
     if n_matches > 2:
         trend_window = st.slider(
             "# of new matches for trend",
-            value = min(3, n_matches),
+            value = min(3, n_matches-2),
             min_value = 1,
-            max_value = max(n_matches-1, 2),
+            max_value = n_matches-1,
             step = 1,
         )
     else:
