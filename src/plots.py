@@ -2,12 +2,12 @@ from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
 from matplotlib import pyplot as plt
-from match_utils import simplify_scoreboard, get_me, get_own_team, get_up_to_n_last_matches
+from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches
 import streamlit as st
 
 
 def display_mmr(df, trend_window=3):
-    df = get_me(df)
+    df = get_my_matches(df)
     mmr = df["mmr"].iloc[-1]
     mmr_old = df["mmr"].iloc[-trend_window]
     st.metric(
@@ -47,7 +47,7 @@ def get_KD(df):
 
 
 def plot_mmr_hisotry(matches, xaxis):
-    df = get_me(matches)
+    df = get_my_matches(matches)
     df["matchno"] += 1
     # star rating
     levels = pd.DataFrame()
