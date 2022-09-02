@@ -135,7 +135,7 @@ else:
         )
     else:
         trend_window = 1
-    columns = st.columns(4)
+    columns = st.columns(3)
     with columns[0]:
         display_mmr(matches, trend_window)
     with columns[1]:
