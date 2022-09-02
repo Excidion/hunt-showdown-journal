@@ -5,6 +5,7 @@ from shutil import copy2 as copyfile
 import threading
 
 
+BACKUP_DIR = os.path.join("data", "raw")
 TIMESTAMP_FORMAT = "%Y%m%d-%H%M%S%f"
 CHECK_FILE_AFTER = 60 # in seconds
 
@@ -41,7 +42,7 @@ class FileBackupper(threading.Thread):
         print("Saved", destination_path)
 
 
-def main(watched_file, backup_dir="./data/raw"):
+def main(watched_file, backup_dir=BACKUP_DIR):
     thread = FileBackupper(watched_file, backup_dir)
     thread.start()
     print("Recorder active...")
@@ -56,4 +57,7 @@ def main(watched_file, backup_dir="./data/raw"):
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()
-    main(os.getenv("watched_file"))
+    main(
+        watched_file = os.getenv("watched_file"), 
+        backup_dir = os.getenv("backup_dir") or BACKUP_DIR,
+    )

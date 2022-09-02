@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from watcher import FileBackupper
+from watcher import FileBackupper, BACKUP_DIR
 from extract import main as parse_matchfiles
 from extract import parse_xml
 from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate
@@ -91,7 +91,8 @@ with col1:
         st.success("Valid Matchfile.")
         set_key(find_dotenv(), "watched_file", filepath) # write vars
         load_dotenv(override=True) # force reload env vars
-    st.info(f"Backup Location: `{os.path.join(os.getcwd(), 'data', 'raw')}`")
+    backup_dir = os.getenv("backup_dir") or BACKUP_DIR
+    st.info(f"Backup Location: `{os.path.abspath(backup_dir)}`")
 
 
 st.caption("After you collected some data")
