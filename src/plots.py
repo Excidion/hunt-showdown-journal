@@ -39,11 +39,14 @@ def display_KD(df, trend_window=3):
         f"{round(kd - kd_old, 2)} in last {trend_window} matches"
     )
 
-def get_KD(df):
+def get_KD(df, split=False):
     df = simplify_scoreboard(df)
     killed = df["shotbyme"].sum()
     died = max(df["shotme"].sum(), 1) # treat zero deaths as one to avoid dividing by zero
-    return killed / died
+    if split:
+        return killed, died
+    else:
+        return killed / died
 
 
 def plot_mmr_hisotry(matches, xaxis):
