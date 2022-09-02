@@ -6,13 +6,19 @@ from watcher import FileBackupper
 from extract import main as parse_matchfiles
 from extract import parse_xml
 from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key, find_dotenv
 from glob import glob
 from match_utils import find_my_id, simplify_scoreboard, construct_match_name
 
-load_dotenv()
 
-st.session_state["watched_file"] = os.getenv("watched_file") or "C:/Programs/Steam/steamapps/common/Hunt Showdown/user/profiles/default/attributes.xml"
+# setup dotenv
+if not os.path.exists(".env"):
+    with open(".env", "w") as file:
+        pass
+load_dotenv()
+st.session_state["watched_file"] = os.getenv("watched_file") or os.path.join(
+    "C:", "Programs", "Steam", "steamapps", "common", "Hunt Showdown", "user", "profiles", "default", "attributes.xml"
+)
 
 
 def start_watcher_process():
@@ -88,6 +94,7 @@ with col1:
     else:
         st.success("Valid Matchfile.")
         st.session_state["watched_file"] = filepath
+        set_key(find_dotenv(), "watched_file", filepath)
     st.info(f"Backup Location: `{os.path.join(os.getcwd(), 'data', 'raw')}`")
 
 
