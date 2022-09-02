@@ -145,10 +145,10 @@ else:
 
     # MMR history
     st.subheader("MMR History")
+    st.write("The MMR displayed is the one at the start of each match.")
     xaxis = st.radio(
         "X-Axis",
-        ["Time", "# of Match"],
-        help = "The MMR displayed is the one at match start."
+        ["# of Match", "Time"],
     )
     xaxis = "datetime_match_ended" if xaxis == "Time" else "matchno"
     fig = plot_mmr_hisotry(matches, xaxis)
