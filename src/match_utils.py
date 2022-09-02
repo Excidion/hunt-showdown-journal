@@ -73,4 +73,4 @@ def get_n_last_matches(df, n):
     return df.loc[df["matchno"] >= df["matchno"].max() - n]
 
 def get_up_to_n_last_matches(df, n):
-    return df.loc[df["matchno"] < df["matchno"].max() - n]
+    return df.loc[df["matchno"] <= df["matchno"].max() - n]
