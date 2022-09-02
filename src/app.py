@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 import os
 from watcher import FileBackupper
 from extract import main as parse_matchfiles
@@ -16,9 +15,6 @@ if not os.path.exists(".env"):
     with open(".env", "w") as file:
         pass
 load_dotenv()
-st.session_state["watched_file"] = os.getenv("watched_file") or os.path.join(
-    "C:", "Programs", "Steam", "steamapps", "common", "Hunt Showdown", "user", "profiles", "default", "attributes.xml"
-)
 
 
 def start_watcher_process():
@@ -26,7 +22,7 @@ def start_watcher_process():
     if thread is not None:
         st.warning("Match Recorder already running.")
     else:
-        thread = FileBackupper(st.session_state.get("watched_file"), "./data/raw")
+        thread = FileBackupper(os.getenv("watched_file"), "./data/raw")
         thread.start()
         st.session_state["watcher_process"] = thread
         st.success("Match Recorder started.")
@@ -42,7 +38,7 @@ def stop_watcher_process():
 
 
 st.title("Hunt Journal")
-tracked_file_is_setup = os.path.exists(st.session_state.get("watched_file"))
+tracked_file_is_setup = os.path.exists(os.getenv("watched_file") or "")
 process_alive = st.session_state.get("watcher_process") is not None
 col0, col1 = st.columns(2)
 with col0:
@@ -50,7 +46,7 @@ with col0:
     start_game = st.button("Play Hunt: Showdown!")
     also_start_filewatcher = st.checkbox(
         label = "Start Match Recorder with Game", 
-        value = True,
+        value = tracked_file_is_setup,
         disabled = not tracked_file_is_setup,
         help = "Can only be used if matchfile is tracked."
     )
@@ -82,7 +78,7 @@ with col0:
 with col1:
     filepath = st.text_input(
         "Set the path to Matchfile",
-        value = st.session_state.get("watched_file"),
+        value = os.getenv("watched_file") or os.path.join("C:", "Programs", "Steam", "steamapps", "common", "Hunt Showdown", "user", "profiles", "default", "attributes.xml"),
         help = "The file will be somewhere like `/steamapps/common/Hunt Showdown/user/profiles/default/attributes.xml`"
     )
     try:
@@ -93,8 +89,8 @@ with col1:
         st.error(f"Invalid Matchfile: {e}")
     else:
         st.success("Valid Matchfile.")
-        st.session_state["watched_file"] = filepath
-        set_key(find_dotenv(), "watched_file", filepath)
+        set_key(find_dotenv(), "watched_file", filepath) # write vars
+        load_dotenv(override=True) # force reload env vars
     st.info(f"Backup Location: `{os.path.join(os.getcwd(), 'data', 'raw')}`")
 
 
