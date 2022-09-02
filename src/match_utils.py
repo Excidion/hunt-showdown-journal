@@ -1,3 +1,20 @@
+from datetime import datetime
+
+
+def construct_match_name(subset, my_id=""):
+    teammates = subset[subset.ownteam & (subset.profileid != my_id)]
+    return " ".join([
+        {
+            1: "Quickplay",
+            2: "Duos",
+            3: "Trios",
+        }[subset.numplayers.max()],
+        "on",
+        datetime.ctime(subset.datetime_match_ended.iloc[0]),
+        ("with " + " & ".join(teammates.blood_line_name) if subset.ownteam.sum() > 1 else "")
+    ])
+
+
 def simplify_scoreboard(data):   
     data["shotbyme"] = data[["downedbyme", "killedbyme"]].sum(axis=1)
     data["shotme"] = data[["downedme", "killedme",]].sum(axis=1)

@@ -8,24 +8,11 @@ from extract import parse_xml
 from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate
 from dotenv import load_dotenv
 from glob import glob
-from match_utils import simplify_scoreboard
+from match_utils import find_my_id, simplify_scoreboard, construct_match_name
 
 load_dotenv()
 
 st.session_state["watched_file"] = os.getenv("watched_file") or "C:/Programs/Steam/steamapps/common/Hunt Showdown/user/profiles/default/attributes.xml"
-
-
-def construct_match_name(subset):
-    return " ".join([
-        {
-            1: "Quickplay",
-            2: "Duos",
-            3: "Trios",
-        }[subset.numplayers.max()],
-        "on",
-        datetime.ctime(subset.datetime_match_ended.iloc[0]),
-        ("with " + ", ".join(subset[subset.ownteam].blood_line_name) if subset.ownteam.sum() > 1 else "")
-    ])
 
 
 def start_watcher_process():
@@ -170,7 +157,8 @@ else:
 
     st.header("Individual Match Statistics")
     # match table
-    match_display_names = {f"{matchno+1}: {construct_match_name(subset)}": matchno for matchno, subset in matches.groupby("matchno")}
+    my_id = find_my_id(matches)
+    match_display_names = {f"{matchno+1}: {construct_match_name(subset, my_id)}": matchno for matchno, subset in matches.groupby("matchno")}
     selected_match = st.selectbox(
         label = "Select a Match",
         options = reversed(match_display_names.keys()),
