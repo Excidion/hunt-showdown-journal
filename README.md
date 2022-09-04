@@ -8,23 +8,16 @@ This app will help you track your progress in the game Hunt: Showdown.
     + **Option B**: Click on *Code* -> *Download ZIP* and unpack the downloaded files.
 + Go into the new directory.
 + Right click on `setup.ps1` an choose *Run with Powershell*.
-+ Right click into the directory and create a new text file and name it `.env`.
-+ Open the newly created file with a text editor (eg. notepad) and add a line like the following.
-**Make sure to change this path according to where you have installed the game.**
-```
-watched_file=C:\Programs\steamapps\common\Hunt Showdown\user\profiles\default\attributes.xml
-```
 
 ## Usage
-### Recording Matches
-Before starting the game, so your matches are recorded:
-+ Go to the installation directory.
-+ Right click on `recorder.ps1` an choose *Run with Powershell*.
-
-Alternatively you can also start the Match Recorder via the app.
-This functionality is experimantal and not yet tested.
-
-### App to Analyze Matches
 When you want to analyze your recorded matches.
 + Go to the installation directory.
 + Right click on `app.ps1` an choose *Run with Powershell*.
+An app will start in a new tab in your webbrowser.
++ **Important:** Set up the correct match file to track.
+For this, in the app, you can set the path to the matchfile in a text input field.
+A often used default value is given, but you might need to change this according to your installation directory of the game.
+If you typed in the correct path a green box with the text *Valid Matchfile*, will appear.
+You can now start the Match Recorder either stand-alone togehter with the game with the buttons on the top of the app.
++ **Make sure the Match Recorder is running while you play!**
++ Once you have recorded some matches, click *Calculate Statistics* in the app.
