@@ -1,50 +1,47 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 import os
-from watcher import FileBackupper
+from watcher import BACKUP_DIR
 from extract import main as parse_matchfiles
 from extract import parse_xml
 from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key, find_dotenv
 from glob import glob
 from match_utils import find_my_id, simplify_scoreboard, construct_match_name
+import subprocess
+import sys
 
+
+# setup dotenv
+if not os.path.exists(".env"):
+    with open(".env", "w") as file:
+        pass
 load_dotenv()
-
-st.session_state["watched_file"] = os.getenv("watched_file") or "C:/Programs/Steam/steamapps/common/Hunt Showdown/user/profiles/default/attributes.xml"
 
 
 def start_watcher_process():
-    thread = st.session_state.get("watcher_process")
-    if thread is not None:
-        st.warning("Match Recorder already running.")
-    else:
-        thread = FileBackupper(st.session_state.get("watched_file"), "./data/raw")
-        thread.start()
-        st.session_state["watcher_process"] = thread
+    proc = subprocess.Popen( # opening via popen ensures running and traceability even when webapp is refreshed / closed
+        [sys.executable, os.path.join("src", "watcher.py")],
+        creationflags = subprocess.CREATE_NEW_CONSOLE, # so a separate window pops up that can be closed by the user
+    )
+    if proc.poll() is None: # process still running in mainloop
         st.success("Match Recorder started.")
-
-def stop_watcher_process():
-    thread = st.session_state.get("watcher_process")
-    if thread is None:
-        st.warning("Match Recorder already stopped.")
     else:
-        thread.stop()
-        st.session_state["watcher_process"] = None
-        st.success("Match Recorder stopped.")
+        st.error("Match Recorder failed.")
 
 
 st.title("Hunt Journal")
-tracked_file_is_setup = os.path.exists(st.session_state.get("watched_file"))
+
+
+# starting the game and match recorder
+tracked_file_is_setup = os.path.exists(os.getenv("watched_file") or "")
 process_alive = st.session_state.get("watcher_process") is not None
 col0, col1 = st.columns(2)
-with col0:
-    # start game
+with col0: 
     start_game = st.button("Play Hunt: Showdown!")
     also_start_filewatcher = st.checkbox(
         label = "Start Match Recorder with Game", 
-        value = True,
+        value = tracked_file_is_setup,
         disabled = not tracked_file_is_setup,
         help = "Can only be used if matchfile is tracked."
     )
@@ -54,12 +51,8 @@ with col0:
         if also_start_filewatcher:
             start_watcher_process()
 with col1:
-    # start watcher proces by hand
     if st.button("Start Match Recorder", disabled = not tracked_file_is_setup):
         start_watcher_process()
-    # kill watcher process
-    if st.button("Stop Match Recorder", disabled = not tracked_file_is_setup):
-        stop_watcher_process()
     
 
 st.markdown("-------")
@@ -76,7 +69,7 @@ with col0:
 with col1:
     filepath = st.text_input(
         "Set the path to Matchfile",
-        value = st.session_state.get("watched_file"),
+        value = os.getenv("watched_file") or os.path.join("C:", "Programs", "Steam", "steamapps", "common", "Hunt Showdown", "user", "profiles", "default", "attributes.xml"),
         help = "The file will be somewhere like `/steamapps/common/Hunt Showdown/user/profiles/default/attributes.xml`"
     )
     try:
@@ -87,8 +80,10 @@ with col1:
         st.error(f"Invalid Matchfile: {e}")
     else:
         st.success("Valid Matchfile.")
-        st.session_state["watched_file"] = filepath
-    st.info(f"Backup Location: `{os.path.join(os.getcwd(), 'data', 'raw')}`")
+        set_key(find_dotenv(), "watched_file", filepath) # write vars
+        load_dotenv(override=True) # force reload env vars
+    backup_dir = os.getenv("backup_dir") or BACKUP_DIR
+    st.info(f"Backup Location: `{os.path.abspath(backup_dir)}`")
 
 
 st.caption("After you collected some data")

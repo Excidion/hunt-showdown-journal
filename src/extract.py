@@ -3,12 +3,12 @@ import pandas as pd
 from glob import glob
 from datetime import datetime
 import os
-from watcher import TIMESTAMP_FORMAT
+from watcher import TIMESTAMP_FORMAT, BACKUP_DIR
 
 
 def main():
     matches = pd.DataFrame()
-    files = sorted([filepath for filepath in glob("./data/raw/*.xml")])
+    files = sorted([filepath for filepath in glob(os.path.join(BACKUP_DIR, "*.xml"))])
     matchno = 0
     for i, path in enumerate(files):
         yield (i/len(files), path)
