@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from watcher import BACKUP_DIR
 from extract import main as parse_matchfiles
-from extract import parse_xml
+from extract import parse_xml, RESULT_DIR
 from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate
 from dotenv import load_dotenv, set_key, find_dotenv
 from glob import glob
@@ -110,7 +110,7 @@ if parse_resultfiles:
 st.markdown("-------")
 
 
-RESULTFILE = "data/processed/matches.pq"
+RESULTFILE = os.path.join(RESULT_DIR, "matches.pq")
 if not os.path.exists(RESULTFILE):
     st.warning("No Match Data has been processed.")
 else:

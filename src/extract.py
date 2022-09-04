@@ -6,6 +6,9 @@ import os
 from watcher import TIMESTAMP_FORMAT, BACKUP_DIR
 
 
+RESULT_DIR = os.path.join("data", "processed")
+
+
 def main():
     matches = pd.DataFrame()
     files = sorted([filepath for filepath in glob(os.path.join(BACKUP_DIR, "*.xml"))])
@@ -31,7 +34,7 @@ def main():
     matches["matchno"] = matches["matchno"].factorize()[0]
     # finish and save
     matches = matches.set_index(["matchno", "teamno", "playerno"])
-    matches.to_parquet("data/processed/matches.pq")
+    matches.to_parquet(os.path.join(RESULT_DIR, "matches.pq"))
 
 def parse_xml(xml):
     data = xmltodict.parse(xml)
@@ -127,4 +130,4 @@ def string_to_bool(string: str) -> bool:
 
 
 if __name__ == "__main__":
-    main()
+    [print(path) for _, path in main()]
