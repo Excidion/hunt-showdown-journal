@@ -15,7 +15,7 @@ def main():
     matchno = 0
     for i, path in enumerate(files):
         yield (i/len(files), path)
-        with open(path, "r", errors="ignore") as infile:
+        with open(path, "r", errors="ignore", encoding="utf-8") as infile:
             xml = infile.read()
         try:
             data = parse_xml(xml)
