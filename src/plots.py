@@ -4,6 +4,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches
 import streamlit as st
+import statsmodels.api as sm
+import numpy as np
 
 
 def display_mmr(df, trend_window=3):
@@ -89,3 +91,42 @@ def plot_mmr_hisotry(matches, xaxis):
     fig = go.Figure(data = mmr_brackets.data + mmr.data)
     fig.update_yaxes(range=[df.mmr.min()*0.99, df.mmr.max()*1.01], autorange=False)
     return fig
+
+
+def effect_on_extraction_chance(matches):
+    style_pyplot()
+    own = matches.loc[matches["ownteam"]].set_index("matchno")
+    y = own.groupby("matchno")["bountyextracted"].max() >= 1
+    X = pd.get_dummies(own["blood_line_name"]).groupby("matchno").sum()
+    model = sm.Logit(y,X)
+    results = model.fit()
+    plt.barh(
+        results.params.index,
+        results.params,
+        color = ["green" if v>=0 else "red" for v in results.params],
+        label = "effect"
+    )
+    conf_int = results.conf_int()
+    plt.errorbar(
+        y=results.params.index,
+        x=results.params,
+        fmt='o',
+        capsize=5,
+        xerr=((results.params-conf_int[0]).abs(), conf_int[1]-results.params),
+        color = "white",
+        label = "uncertainty",
+    )
+    plt.legend()
+    plt.xlabel("Odds of extracting with a bounty")
+    xticks = plt.gca().get_xticks()
+    plt.xticks(xticks, [f"{round(v)}:1" if v >=1 else f"1:{round(1/v)}" for v in np.exp(xticks)])
+    return plt.gcf()
+
+def style_pyplot():
+    plt.style.use("dark_background")
+    fig = plt.gcf()
+    fig.patch.set_facecolor('b')
+    fig.patch.set_alpha(0)
+    ax = plt.gca()
+    ax.patch.set_facecolor('b')
+    ax.patch.set_alpha(0)

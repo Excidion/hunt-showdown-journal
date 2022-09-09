@@ -4,7 +4,7 @@ import os
 from watcher import BACKUP_DIR
 from extract import main as parse_matchfiles
 from extract import parse_xml, RESULT_DIR
-from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate
+from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate, effect_on_extraction_chance
 from dotenv import load_dotenv, set_key, find_dotenv
 from glob import glob
 from match_utils import find_my_id, simplify_scoreboard, construct_match_name
@@ -149,7 +149,11 @@ else:
     fig = plot_mmr_hisotry(matches, xaxis)
     st.plotly_chart(fig)
 
+    st.subheader("Teammate Analysis")
+    st.pyplot(effect_on_extraction_chance(matches))
 
+
+    st.markdown("---")
     st.header("Individual Match Statistics")
     # match table
     my_id = find_my_id(matches)
