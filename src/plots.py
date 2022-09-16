@@ -69,15 +69,24 @@ def plot_mmr_hisotry(matches, xaxis):
     levels = levels.set_index(xaxis).stack().reset_index().rename({"level_1":"Stars", 0:"mmr"}, axis=1)
     levels["delta"] = levels["mmr"].diff()
     levels.loc[levels["delta"] < 0, "delta"] = None
-    mmr = px.line(
+    mmr = px.scatter(
         df, 
-        x=xaxis, 
-        y="mmr", 
-        markers=True, 
+        x = xaxis, 
+        y = "mmr", 
+        symbol="numplayers",
+        symbol_map={1:"circle", 2:"diamond-wide", 3:"star-triangle-up"},
+        color_discrete_sequence=["white"],
+        hover_name = xaxis, 
+        hover_data = ["mmr"],
+    )
+    mmr_lines = px.line(
+        df, 
+        x = xaxis, 
+        y = "mmr", 
         color_discrete_sequence=["black"],
         hover_name = xaxis, 
         hover_data = ["mmr"],
-    ) 
+    )
     colors = px.colors.sequential.Turbo
     mmr_brackets = px.area(
         levels, 
@@ -88,8 +97,9 @@ def plot_mmr_hisotry(matches, xaxis):
         hover_name = "Stars", 
         hover_data = ["mmr"],
     )
-    fig = go.Figure(data = mmr_brackets.data + mmr.data)
+    fig = go.Figure(data = mmr_brackets.data + mmr_lines.data + mmr.data)
     fig.update_yaxes(range=[df.mmr.min()*0.99, df.mmr.max()*1.01], autorange=False)
+    fig.update_layout(showlegend = False)
     return fig
 
 
@@ -130,3 +140,4 @@ def style_pyplot():
     ax = plt.gca()
     ax.patch.set_facecolor('b')
     ax.patch.set_alpha(0)
+    
