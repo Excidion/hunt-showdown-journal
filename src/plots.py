@@ -2,7 +2,7 @@ from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
 from matplotlib import pyplot as plt
-from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches
+from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches, get_profileid_map
 import streamlit as st
 import statsmodels.api as sm
 import numpy as np
@@ -107,7 +107,7 @@ def effect_on_extraction_chance(matches):
     style_pyplot()
     own = matches.loc[matches["ownteam"]].set_index("matchno")
     y = own.groupby("matchno")["bountyextracted"].max() >= 1
-    X = pd.get_dummies(own["blood_line_name"]).groupby("matchno").sum()
+    X = pd.get_dummies(own["profileid"]).groupby("matchno").sum()
     model = sm.Logit(y,X)
     results = model.fit()
     plt.barh(
@@ -130,6 +130,8 @@ def effect_on_extraction_chance(matches):
     plt.xlabel("Odds of extracting with a bounty")
     xticks = plt.gca().get_xticks()
     plt.xticks(xticks, [f"{round(v)}:1" if v >=1 else f"1:{round(1/v)}" for v in np.exp(xticks)])
+    id_map = get_profileid_map(matches)
+    plt.yticks(plt.gca().get_yticks(), [id_map[i] for i in results.params.index])
     return plt.gcf()
 
 def style_pyplot():

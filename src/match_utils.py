@@ -74,3 +74,6 @@ def get_n_last_matches(df, n):
 
 def get_up_to_n_last_matches(df, n):
     return df.loc[df["matchno"] <= df["matchno"].max() - n]
+
+def get_profileid_map(matches):
+    return matches.groupby("profileid")["blood_line_name"].last().to_dict()
