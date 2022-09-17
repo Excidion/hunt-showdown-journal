@@ -69,7 +69,7 @@ with col0:
 with col1:
     filepath = st.text_input(
         "Set the path to Matchfile",
-        value = os.getenv("watched_file") or os.path.join("C:", "Programs", "Steam", "steamapps", "common", "Hunt Showdown", "user", "profiles", "default", "attributes.xml"),
+        value = os.getenv("watched_file") or os.path.join("C:", "Program Files (x86)", "Steam", "steamapps", "common", "Hunt Showdown", "user", "profiles", "default", "attributes.xml"),
         help = "The file will be somewhere like `/steamapps/common/Hunt Showdown/user/profiles/default/attributes.xml`"
     )
     try:
