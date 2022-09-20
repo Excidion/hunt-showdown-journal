@@ -131,7 +131,7 @@ def effect_on_extraction_chance(matches):
     xticks = plt.gca().get_xticks()
     plt.xticks(xticks, [f"{round(v)}:1" if v >=1 else f"1:{round(1/v)}" for v in np.exp(xticks)])
     id_map = get_profileid_map(matches)
-    plt.yticks(plt.gca().get_yticks(), [id_map[i] for i in results.params.index])
+    plt.yticks(plt.gca().get_yticks(), [id_map.get(i) for i in results.params.index])
     return plt.gcf()
 
 def style_pyplot():
