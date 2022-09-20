@@ -1,4 +1,6 @@
 from datetime import datetime
+from sklearn.linear_model import LinearRegression
+import pandas as pd
 
 
 def construct_match_name(subset, my_id=""):
@@ -77,3 +79,45 @@ def get_up_to_n_last_matches(df, n):
 
 def get_profileid_map(matches):
     return matches.groupby("profileid")["blood_line_name"].last().to_dict()
+
+
+def predict_mmr(matches):
+    matches = matches.set_index("matchno")
+    mine = get_my_matches(matches)
+    mmr_in = mine["mmr"]
+    mmr_in.name = "mmr_in"
+    mmr_out = mine["mmr"].shift(-1)
+    mmr_out.name = "mmr_out"
+    # unite downed and killed
+    matches["shotbyme"] = matches[["downedbyme", "killedbyme"]].sum(axis=1)
+    matches["shotme"] = matches[["downedme", "killedme",]].sum(axis=1)
+    # mmr of people shot  relative to own
+    shotbyme = matches.loc[matches["shotbyme"]>0]
+    shotbyme = shotbyme.join(mmr_in, rsuffix="_in")
+    shotbyme = (shotbyme["mmr"] / shotbyme["mmr_in"]) * shotbyme["shotbyme"]
+    shotbyme = shotbyme.groupby("matchno").sum()
+    shotbyme.name = "shotbyme"
+    # mmr of people shooting me relative to own
+    shotme = matches.loc[matches["shotme"]>0]
+    shotme = shotme.join(mmr_in, rsuffix="_in")
+    shotme = (shotme["mmr"] / shotme["mmr_in"]) * shotme["shotme"]
+    shotme = shotme.groupby("matchno").sum()
+    shotme.name = "shotme"
+    # extractions
+    own = get_own_team(matches)
+    bounty = (own.groupby("matchno")["bountyextracted"].sum() > 0).astype(int)
+    bounty.name = "bounties_extracted"
+    # join and fillna
+    data = pd.concat([mmr_out, mmr_in, shotbyme, shotme, bounty], axis=1).fillna(0)
+    data = data.loc[data["mmr_in"] != 0]
+    new_data = data.loc[data["mmr_out"] == 0] # for later prediction
+    data = data.loc[data["mmr_out"] != 0]
+    # make model
+    y = data["mmr_out"] - data["mmr_in"]
+    X = data[data.columns.difference(["mmr_out", "mmr_in"])]
+    model = LinearRegression(fit_intercept=False)
+    model.fit(X,y)
+    newest_match = (model.predict(new_data[data.columns.difference(["mmr_out", "mmr_in"])]) + new_data["mmr_in"]).astype(int)
+    return newest_match.values[0]
+
+

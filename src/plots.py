@@ -2,7 +2,7 @@ from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
 from matplotlib import pyplot as plt
-from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches, get_profileid_map
+from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches, get_profileid_map, predict_mmr
 import streamlit as st
 import statsmodels.api as sm
 import numpy as np
@@ -51,7 +51,7 @@ def get_KD(df, split=False):
         return killed / died
 
 
-def plot_mmr_hisotry(matches, xaxis):
+def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
     df = get_my_matches(matches)
     df["matchno"] += 1
     # star rating
@@ -69,6 +69,10 @@ def plot_mmr_hisotry(matches, xaxis):
     levels = levels.set_index(xaxis).stack().reset_index().rename({"level_1":"Stars", 0:"mmr"}, axis=1)
     levels["delta"] = levels["mmr"].diff()
     levels.loc[levels["delta"] < 0, "delta"] = None
+    # show mmr at match start or at match end
+    if mmr_out:
+        df["mmr"] = df["mmr"].shift(-1)
+        df["mmr"].iloc[-1] = predict_mmr(matches)
     mmr = px.scatter(
         df, 
         x = xaxis, 

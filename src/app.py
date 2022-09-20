@@ -141,12 +141,21 @@ else:
     # MMR history
     st.subheader("MMR History")
     st.write("The MMR displayed is the one at the start of each match.")
-    xaxis = st.radio(
-        "X-Axis",
-        ["# of Match", "Time"],
-    )
-    xaxis = "datetime_match_ended" if xaxis == "Time" else "matchno"
-    fig = plot_mmr_hisotry(matches, xaxis)
+    a,b = st.columns(2)
+    with a:
+        xaxis = st.radio(
+            "X-Axis",
+            ["# of Match", "Time"],
+        )
+        xaxis = "datetime_match_ended" if xaxis == "Time" else "matchno"
+    with b:
+        mmr_out = st.radio(
+            "MMR at Match...",
+            ["Start", "End"],
+            help = "With setting `End` the MMR after the last is eastimated."
+        )
+        mmr_out = mmr_out=="End"
+    fig = plot_mmr_hisotry(matches, xaxis, mmr_out)
     st.plotly_chart(fig)
 
     st.subheader("Teammate Analysis")
