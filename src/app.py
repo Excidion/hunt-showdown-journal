@@ -140,7 +140,6 @@ else:
 
     # MMR history
     st.subheader("MMR History")
-    st.write("The MMR displayed is the one at the start of each match.")
     a,b = st.columns(2)
     with a:
         xaxis = st.radio(

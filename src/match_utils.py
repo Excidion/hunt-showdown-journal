@@ -81,7 +81,16 @@ def get_profileid_map(matches):
     return matches.groupby("profileid")["blood_line_name"].last().to_dict()
 
 
-def predict_mmr(matches):
+def predict_mmr(matches, method="elo"):
+    match method:
+        case "elo":
+            return predict_mmr_elo(matches)
+        case "linreg":
+            return predict_mmr_linreg(matches)
+        case _:
+            raise ValueError(f"Unknown method: {method}")
+
+def predict_mmr_linreg(matches):
     matches = matches.set_index("matchno")
     mine = get_my_matches(matches)
     mmr_in = mine["mmr"]
@@ -120,4 +129,30 @@ def predict_mmr(matches):
     newest_match = (model.predict(new_data[data.columns.difference(["mmr_out", "mmr_in"])]) + new_data["mmr_in"]).astype(int)
     return newest_match.values[0]
 
+def predict_mmr_elo(matches):
+    last_match_nr = matches["matchno"].max()
+    matches = matches.set_index("matchno")
+    mine = get_my_matches(matches)
+    mmr = mine.loc[last_match_nr, "mmr"]
+    lastmatch = matches.loc[last_match_nr]
+    # unite downed and killed
+    lastmatch["shotbyme"] = lastmatch[["downedbyme", "killedbyme"]].sum(axis=1)
+    lastmatch["shotme"] = lastmatch[["downedme", "killedme",]].sum(axis=1)
+    change = 0
+    for _, row in lastmatch.groupby("profileid"):
+        kills = update_elo_scores(mmr, row["mmr"], 1, return_updated=False)[0] * row["shotbyme"]
+        deaths = update_elo_scores(mmr, row["mmr"], 0, return_updated=False)[0] * row["shotme"]
+        change += kills + deaths
+    return mmr + change
 
+def update_elo_scores(p1, p2, result=1, k=32, return_updated=True):
+    assert (result >= 0) and (result <= 1) # 1: p1 wins, 0: p2 wins
+    expected = 1 / (1 + 10**((p2 - p1) / 400))
+    adjust = k * (result - expected)
+    adjust = round(adjust) # ensure integers
+    if return_updated:
+        p1 += adjust
+        p2 -= adjust
+        return p1, p2
+    else:
+        return adjust, -adjust
