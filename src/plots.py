@@ -9,13 +9,13 @@ import numpy as np
 
 
 def display_mmr(df, trend_window=3):
-    df = get_my_matches(df)
-    mmr = df["mmr"].iloc[-1]
-    mmr_old = df["mmr"].iloc[-trend_window]
+    mmr = predict_mmr(df)
+    mmr_old = get_my_matches(df)["mmr"].iloc[-(trend_window-1)]
     st.metric(
         "MMR",
-        mmr,
-        f"{mmr - mmr_old} in last {trend_window} matches"
+        f"~{mmr}",
+        f"{mmr - mmr_old} in last {trend_window} matches",
+        help = "The data only contains the MMR before a match start. But based on your last match, your current MMR can be eastimated."
     )
 
 def display_extraction_rate(df, trend_window=3):

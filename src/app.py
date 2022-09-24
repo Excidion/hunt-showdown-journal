@@ -150,8 +150,8 @@ else:
     with b:
         mmr_out = st.radio(
             "MMR at Match...",
-            ["Start", "End"],
-            help = "With setting `End` the MMR after the last is eastimated."
+            ["End", "Start"],
+            help = "With setting `End` the last MMR is eastimated."
         )
         mmr_out = mmr_out=="End"
     fig = plot_mmr_hisotry(matches, xaxis, mmr_out)

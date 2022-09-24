@@ -143,7 +143,7 @@ def predict_mmr_elo(matches):
         kills = update_elo_scores(mmr, row["mmr"], 1, return_updated=False)[0] * row["shotbyme"]
         deaths = update_elo_scores(mmr, row["mmr"], 0, return_updated=False)[0] * row["shotme"]
         change += kills + deaths
-    return mmr + change
+    return int(mmr + change)
 
 def update_elo_scores(p1, p2, result=1, k=32, return_updated=True):
     assert (result >= 0) and (result <= 1) # 1: p1 wins, 0: p2 wins
