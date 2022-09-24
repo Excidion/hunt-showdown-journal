@@ -1,4 +1,6 @@
 from datetime import datetime
+from sklearn.linear_model import LinearRegression
+import pandas as pd
 
 
 def construct_match_name(subset, my_id=""):
@@ -77,3 +79,80 @@ def get_up_to_n_last_matches(df, n):
 
 def get_profileid_map(matches):
     return matches.groupby("profileid")["blood_line_name"].last().to_dict()
+
+
+def predict_mmr(matches, method="elo"):
+    match method:
+        case "elo":
+            return predict_mmr_elo(matches)
+        case "linreg":
+            return predict_mmr_linreg(matches)
+        case _:
+            raise ValueError(f"Unknown method: {method}")
+
+def predict_mmr_linreg(matches):
+    matches = matches.set_index("matchno")
+    mine = get_my_matches(matches)
+    mmr_in = mine["mmr"]
+    mmr_in.name = "mmr_in"
+    mmr_out = mine["mmr"].shift(-1)
+    mmr_out.name = "mmr_out"
+    # unite downed and killed
+    matches["shotbyme"] = matches[["downedbyme", "killedbyme"]].sum(axis=1)
+    matches["shotme"] = matches[["downedme", "killedme",]].sum(axis=1)
+    # mmr of people shot  relative to own
+    shotbyme = matches.loc[matches["shotbyme"]>0]
+    shotbyme = shotbyme.join(mmr_in, rsuffix="_in")
+    shotbyme = (shotbyme["mmr"] / shotbyme["mmr_in"]) * shotbyme["shotbyme"]
+    shotbyme = shotbyme.groupby("matchno").sum()
+    shotbyme.name = "shotbyme"
+    # mmr of people shooting me relative to own
+    shotme = matches.loc[matches["shotme"]>0]
+    shotme = shotme.join(mmr_in, rsuffix="_in")
+    shotme = (shotme["mmr"] / shotme["mmr_in"]) * shotme["shotme"]
+    shotme = shotme.groupby("matchno").sum()
+    shotme.name = "shotme"
+    # extractions
+    own = get_own_team(matches)
+    bounty = (own.groupby("matchno")["bountyextracted"].sum() > 0).astype(int)
+    bounty.name = "bounties_extracted"
+    # join and fillna
+    data = pd.concat([mmr_out, mmr_in, shotbyme, shotme, bounty], axis=1).fillna(0)
+    data = data.loc[data["mmr_in"] != 0]
+    new_data = data.loc[data["mmr_out"] == 0] # for later prediction
+    data = data.loc[data["mmr_out"] != 0]
+    # make model
+    y = data["mmr_out"] - data["mmr_in"]
+    X = data[data.columns.difference(["mmr_out", "mmr_in"])]
+    model = LinearRegression(fit_intercept=False)
+    model.fit(X,y)
+    newest_match = (model.predict(new_data[data.columns.difference(["mmr_out", "mmr_in"])]) + new_data["mmr_in"]).astype(int)
+    return newest_match.values[0]
+
+def predict_mmr_elo(matches):
+    last_match_nr = matches["matchno"].max()
+    matches = matches.set_index("matchno")
+    mine = get_my_matches(matches)
+    mmr = mine.loc[last_match_nr, "mmr"]
+    lastmatch = matches.loc[last_match_nr]
+    # unite downed and killed
+    lastmatch["shotbyme"] = lastmatch[["downedbyme", "killedbyme"]].sum(axis=1)
+    lastmatch["shotme"] = lastmatch[["downedme", "killedme",]].sum(axis=1)
+    change = 0
+    for _, row in lastmatch.groupby("profileid"):
+        kills = update_elo_scores(mmr, row["mmr"], 1, return_updated=False)[0] * row["shotbyme"]
+        deaths = update_elo_scores(mmr, row["mmr"], 0, return_updated=False)[0] * row["shotme"]
+        change += kills + deaths
+    return int(mmr + change)
+
+def update_elo_scores(p1, p2, result=1, k=32, return_updated=True):
+    assert (result >= 0) and (result <= 1) # 1: p1 wins, 0: p2 wins
+    expected = 1 / (1 + 10**((p2 - p1) / 400))
+    adjust = k * (result - expected)
+    adjust = round(adjust) # ensure integers
+    if return_updated:
+        p1 += adjust
+        p2 -= adjust
+        return p1, p2
+    else:
+        return adjust, -adjust
