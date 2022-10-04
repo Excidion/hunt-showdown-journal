@@ -3,6 +3,17 @@ from sklearn.linear_model import LinearRegression
 import pandas as pd
 
 
+MMR_BRACKETS = {
+    0: 0,
+    1: 2000,
+    2: 2300,
+    3: 2600,
+    4: 2750,
+    5: 3000,
+    6: 5000,
+}
+
+
 def construct_match_name(subset, my_id=""):
     teammates = subset[subset.ownteam & (subset.profileid != my_id)]
     return " ".join([

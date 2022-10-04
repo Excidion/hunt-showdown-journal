@@ -2,7 +2,7 @@ from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
 from matplotlib import pyplot as plt
-from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches, get_profileid_map, predict_mmr
+from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches, get_profileid_map, predict_mmr, MMR_BRACKETS
 import streamlit as st
 import statsmodels.api as sm
 import numpy as np
@@ -59,13 +59,8 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
     levels[xaxis] = df[xaxis]
     levels = levels.loc[(levels[xaxis] == levels[xaxis].min()) | (levels[xaxis] == levels[xaxis].max())]
     levels = levels.reset_index(drop=True)
-    levels["0"] = 0
-    levels["1"] = 2000
-    levels["2"] = 2300
-    levels["3"] = 2600
-    levels["4"] = 2750
-    levels["5"] = 3000
-    levels["6"] = 5000
+    for bracket in MMR_BRACKETS.keys():
+        levels[str(bracket)] = MMR_BRACKETS.get(bracket)
     levels = levels.set_index(xaxis).stack().reset_index().rename({"level_1":"Stars", 0:"mmr"}, axis=1)
     levels["delta"] = levels["mmr"].diff()
     levels.loc[levels["delta"] < 0, "delta"] = None
