@@ -158,7 +158,18 @@ else:
     st.plotly_chart(fig)
 
     st.subheader("Teammate Analysis")
-    st.pyplot(effect_on_extraction_chance(matches))
+    st.write(
+        "The following analysis tries to give an indication which teammates are the most helpful to you.",
+        "To calculate the odds for a whole team simply multiply the odds of the individuals.",
+    )
+    minimum_matches = st.number_input(
+        "Minimum number of matches together with another player", 
+        min_value = 1, 
+        max_value = matches["matchno"].max(), 
+        value = min(3, matches["matchno"].max()),
+        help = "If you get errors performing the analysis try setting a higher value.",
+    )
+    st.pyplot(effect_on_extraction_chance(matches, minimum_matches))
 
 
     st.markdown("---")

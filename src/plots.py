@@ -107,11 +107,14 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
     return fig
 
 
-def effect_on_extraction_chance(matches):
+def effect_on_extraction_chance(matches, minimum_matches=3):
     style_pyplot()
     own = matches.loc[matches["ownteam"]].set_index("matchno")
     y = own.groupby("matchno")["bountyextracted"].max() >= 1
     X = pd.get_dummies(own["profileid"]).groupby("matchno").sum()
+    matches_per_player = X.sum()
+    enough_matches = matches_per_player.loc[matches_per_player >= minimum_matches]
+    X = X[enough_matches.index]
     model = sm.Logit(y,X)
     try:
         results = model.fit()
