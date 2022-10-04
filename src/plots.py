@@ -113,7 +113,11 @@ def effect_on_extraction_chance(matches):
     y = own.groupby("matchno")["bountyextracted"].max() >= 1
     X = pd.get_dummies(own["profileid"]).groupby("matchno").sum()
     model = sm.Logit(y,X)
-    results = model.fit()
+    try:
+        results = model.fit()
+    except Exception as e:
+        st.error(f"Error performing analysis: {e}")
+        return plt.gcf() 
     plt.barh(
         results.params.index,
         results.params,
