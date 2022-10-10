@@ -14,6 +14,11 @@ MMR_BRACKETS = {
 }
 
 
+def get_mmr_bracket(mmr):
+    for bracket in reversed(sorted(MMR_BRACKETS.keys())):
+        if MMR_BRACKETS[bracket] <= mmr:
+            return bracket
+
 def construct_match_name(subset, my_id=""):
     teammates = subset[subset.ownteam & (subset.profileid != my_id)]
     return " ".join([
@@ -151,8 +156,8 @@ def predict_mmr_elo(matches):
     lastmatch["shotme"] = lastmatch[["downedme", "killedme",]].sum(axis=1)
     change = 0
     for _, row in lastmatch.groupby("profileid"):
-        kills = update_elo_scores(mmr, row["mmr"], 1, return_updated=False)[0] * row["shotbyme"]
-        deaths = update_elo_scores(mmr, row["mmr"], 0, return_updated=False)[0] * row["shotme"]
+        kills = update_elo_scores(mmr, row["mmr"], 1, return_updated=False) * row["shotbyme"]
+        deaths = update_elo_scores(mmr, row["mmr"], 0, return_updated=False) * row["shotme"]
         change += kills + deaths
     return int(mmr + change)
 
@@ -166,4 +171,4 @@ def update_elo_scores(p1, p2, result=1, k=32, return_updated=True):
         p2 -= adjust
         return p1, p2
     else:
-        return adjust, -adjust
+        return adjust # sign always in relation to p1

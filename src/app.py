@@ -4,10 +4,18 @@ import os
 from watcher import BACKUP_DIR
 from extract import main as parse_matchfiles
 from extract import parse_xml, RESULT_DIR
-from plots import plot_mmr_hisotry, display_KD, display_mmr, display_extraction_rate, effect_on_extraction_chance
+from plots import (
+    plot_mmr_hisotry, 
+    display_KD,
+    get_KD, 
+    display_mmr, 
+    display_extraction_rate, 
+    effect_on_extraction_chance, 
+    display_mmr_taken,
+)
 from dotenv import load_dotenv, set_key, find_dotenv
 from glob import glob
-from match_utils import find_my_id, simplify_scoreboard, construct_match_name
+from match_utils import find_my_id, simplify_scoreboard, construct_match_name, predict_mmr
 import subprocess
 import sys
 
@@ -137,6 +145,7 @@ else:
         display_KD(matches, trend_window)
     with columns[2]:
         display_extraction_rate(matches, trend_window)
+    display_mmr_taken(matches)
 
     # MMR history
     st.subheader("MMR History")
@@ -182,6 +191,38 @@ else:
         options = reversed(match_display_names.keys()),
     )
     selection = matches.loc[matches["matchno"] == match_display_names[selected_match]]
+    
+    # single match KPIs
+    my_game = selection.loc[(matches["profileid"] == my_id)]
+    mmr_in = my_game["mmr"].iloc[0]
+    try:
+        mmr_out = matches.loc[
+            (matches["matchno"] == match_display_names[selected_match] + 1) &
+            (matches["profileid"] == my_id),
+            "mmr"
+        ].iloc[0]
+        mmr_out_eastimated = False
+    except IndexError:
+        mmr_out = predict_mmr(matches)
+        mmr_out_eastimated = True
+    
+    columns = st.columns(2)
+    with columns[0]:
+        st.metric(
+            "MMR at match end",
+            value  = int(mmr_out),
+            delta = f"{int(mmr_out - mmr_in)} vs match start",
+            help = "MMR eastimated" if mmr_out_eastimated else None,
+        )
+    kills, deaths = get_KD(selection, split = True)
+    kd = round(kills/max(deaths, 1), 2)
+    with columns[1]:
+        st.metric(
+            "Match K / D",
+            value = f"{kills} / {deaths}",
+        )
+
+    # endscreen
     for team, subset in selection.groupby("teamno"):
         # style team display
         team_description = f"Team #{team+1} (MMR {subset.mmr_team.unique()[0]})"

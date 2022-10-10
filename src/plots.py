@@ -2,7 +2,17 @@ from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
 from matplotlib import pyplot as plt
-from match_utils import simplify_scoreboard, get_my_matches, get_own_team, get_up_to_n_last_matches, get_profileid_map, predict_mmr, MMR_BRACKETS
+from match_utils import (
+    simplify_scoreboard, 
+    get_my_matches, 
+    get_own_team, 
+    get_up_to_n_last_matches, 
+    get_profileid_map, 
+    predict_mmr,
+    update_elo_scores,
+    get_mmr_bracket,
+    MMR_BRACKETS,
+)
 import streamlit as st
 import statsmodels.api as sm
 import numpy as np
@@ -44,11 +54,57 @@ def display_KD(df, trend_window=3):
 def get_KD(df, split=False):
     df = simplify_scoreboard(df)
     killed = df["shotbyme"].sum()
-    died = max(df["shotme"].sum(), 1) # treat zero deaths as one to avoid dividing by zero
+    died = df["shotme"].sum()
     if split:
         return killed, died
     else:
+        died = max(died, 1) # treat zero deaths as one to avoid dividing by zero
         return killed / died
+
+
+def display_mmr_taken(matches):
+    matches = matches.set_index("matchno")
+    mine = get_my_matches(matches)["mmr"]
+    mine.name = "my_mmr"
+    matches = matches.join(mine)
+    matches["shotbyme"] = matches[["downedbyme", "killedbyme"]].sum(axis=1)
+    matches["shotme"] = matches[["downedme", "killedme",]].sum(axis=1)
+    matches = matches.loc[(matches["shotbyme"] + matches["shotme"]) > 0] # skip irrelevant
+    total_mmr_taken = 0
+    max_mmr_taken = 0
+    max_mmr_taken_victim = ""
+    ranks_taken = 0
+    deranked = set()
+    for (matchno, profileid), row in matches.groupby(["matchno", "profileid"]):
+        mmr_taken = update_elo_scores(row["my_mmr"], row["mmr"], 1, return_updated=False) * row["shotbyme"]
+        mmr_taken = mmr_taken.iloc[0]
+        if mmr_taken > 0:
+            mmr_lost = update_elo_scores(row["my_mmr"], row["mmr"], 0, return_updated=False) * row["shotme"]
+            mmr_taken += mmr_lost.iloc[0] # correct for trades (sign is negative by default)
+        if mmr_taken > 0:
+            total_mmr_taken += mmr_taken
+            if mmr_taken > max_mmr_taken:
+                max_mmr_taken = mmr_taken
+                max_mmr_taken_victim = row["blood_line_name"].iloc[0] + f" (#{matchno+1})"
+            rank_before = get_mmr_bracket(row["mmr"].iloc[0]) 
+            rank_after = get_mmr_bracket(row["mmr"].iloc[0] - mmr_taken)
+            if rank_before > rank_after:
+                ranks_taken += rank_before - rank_after
+                deranked.add(row["blood_line_name"].iloc[0] + f" (#{matchno+1}) {rank_before}↘{rank_after}")
+ 
+    columns = st.columns(3)
+    with columns[0]:
+        st.metric(
+            "MMR taken from others",
+            value = int(total_mmr_taken),
+            help = f"Max. -{int(max_mmr_taken)} from {max_mmr_taken_victim}",
+        )
+    with columns[1]:
+        st.metric(
+            "Ruined someones day",
+            value = f"{int(ranks_taken)}×",
+            help = "\n\n".join(list(deranked)),
+        )
 
 
 def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
