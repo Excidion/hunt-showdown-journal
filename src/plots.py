@@ -199,7 +199,7 @@ def effect_on_extraction_chance(matches, minimum_matches=1):
     plt.xticks(xticks, [f"{round(o)}:1" if o >=1 else f"1:{round(1/o)}" for o in odds])
     id_map = get_profileid_map(matches)
     plt.yticks(plt.gca().get_yticks(), [id_map.get(i) for i in results.params.index])
-    plt.title(f"Team mates with at least {minimum_matches} matches togehter")
+    plt.title(f"Teammates with at least {minimum_matches} matches together")
     return plt.gcf()
 
 def style_pyplot():
