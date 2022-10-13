@@ -1,3 +1,4 @@
+from cmath import isfinite
 from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
@@ -158,7 +159,8 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
     return fig
 
 
-def effect_on_extraction_chance(matches, minimum_matches=3):
+def effect_on_extraction_chance(matches, minimum_matches=1):
+    assert minimum_matches <= matches["matchno"].nunique(), "Not enough matches recorded."
     style_pyplot()
     own = matches.loc[matches["ownteam"]].set_index("matchno")
     y = own.groupby("matchno")["bountyextracted"].max() >= 1
@@ -169,9 +171,8 @@ def effect_on_extraction_chance(matches, minimum_matches=3):
     model = sm.Logit(y,X)
     try:
         results = model.fit()
-    except Exception as e:
-        st.error(f"Error performing analysis: {e}")
-        return plt.gcf() 
+    except Exception as e: # possible LinAlg Error when too many players and too few matches
+        return effect_on_extraction_chance(matches, minimum_matches+1)
     plt.barh(
         results.params.index,
         results.params,
@@ -191,9 +192,14 @@ def effect_on_extraction_chance(matches, minimum_matches=3):
     plt.legend()
     plt.xlabel("Odds of extracting with a bounty")
     xticks = plt.gca().get_xticks()
-    plt.xticks(xticks, [f"{round(v)}:1" if v >=1 else f"1:{round(1/v)}" for v in np.exp(xticks)])
+    odds = np.exp(xticks)
+    if (odds == 0).any() or not np.isfinite(odds).any(): # check if any odds are not sensible
+        plt.close() # delete existing plot
+        return effect_on_extraction_chance(matches, minimum_matches+1)
+    plt.xticks(xticks, [f"{round(o)}:1" if o >=1 else f"1:{round(1/o)}" for o in odds])
     id_map = get_profileid_map(matches)
     plt.yticks(plt.gca().get_yticks(), [id_map.get(i) for i in results.params.index])
+    plt.title(f"Team mates with at least {minimum_matches} matches togehter")
     return plt.gcf()
 
 def style_pyplot():
