@@ -1,4 +1,3 @@
-from cmath import isfinite
 from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
