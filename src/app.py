@@ -170,15 +170,11 @@ else:
     st.write(
         "The following analysis tries to give an indication which teammates are the most helpful to you.",
         "To calculate the odds for a whole team simply multiply the odds of the individuals.",
+        "\n\n",
+        "The amount of matches needed before a player shows up in this analysis can vary.",
+        "The algorithm will try to set this requirement as low as possible, while making sure results can be calculated."
     )
-    minimum_matches = st.number_input(
-        "Minimum number of matches together with another player", 
-        min_value = 1, 
-        max_value = matches["matchno"].max(), 
-        value = min(3, matches["matchno"].max()),
-        help = "If you get errors performing the analysis try setting a higher value.",
-    )
-    st.pyplot(effect_on_extraction_chance(matches, minimum_matches))
+    st.pyplot(effect_on_extraction_chance(matches))
 
 
     st.markdown("---")
