@@ -178,7 +178,8 @@ else:
         value = min(3, matches["matchno"].max()),
         help = "If you get errors performing the analysis try setting a higher value.",
     )
-    st.pyplot(effect_on_extraction_chance(matches, minimum_matches))
+    target = st.selectbox("Analyze Teammates influence on...", ["extracting with a bounty", "surviving"])
+    st.pyplot(effect_on_extraction_chance(matches, target, minimum_matches))
 
 
     st.markdown("---")

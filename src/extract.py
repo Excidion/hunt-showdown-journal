@@ -41,6 +41,7 @@ def parse_xml(xml):
     # cleanup names and transform to usable dict
     data = {x["@name"]: x["@value"] for x in data["Attributes"]["Attr"]}
     match = get_matche_data(data)
+    match["survival"] = check_survival(data)
     return match
 
 def get_matche_data(data):
@@ -127,6 +128,26 @@ def string_to_bool(string: str) -> bool:
             return True
         case 'false':
             return False
+
+
+def check_survival(data):
+    accolades = get_accolades(data)
+    return "accolade_extraction" in accolades["category"].unique()
+
+def get_accolades(data):
+    accolades = pd.DataFrame()
+    for a in range(1, 100):
+        try:
+            #adata = {"_".join(x.split("_")[2::]): data[x] for x in data.keys() if f"MissionAccoladeEntry_{a}" in x}
+            adata = {"_".join(x.split("_")[2::]): data[x] for x in data.keys() if f"MissionBagEntry_{a}" in x}
+        except Exception as e:
+            print(e)
+            break
+        else:
+            adata = pd.DataFrame.from_dict({key: [adata[key]] for key in adata.keys()})
+            adata["entryno"] = a
+            accolades = pd.concat([accolades, adata], ignore_index=True)
+    return accolades
 
 
 if __name__ == "__main__":
