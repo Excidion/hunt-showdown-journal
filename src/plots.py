@@ -159,7 +159,7 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
     return fig
 
 
-def effect_on_extraction_chance(matches, target="extracting with a bounty", minimum_matches=3):
+def effect_on_success_chance(matches, target="extracting with a bounty", minimum_matches=3):
     style_pyplot()
     own = matches.loc[matches["ownteam"]].set_index("matchno")
     if target == "extracting with a bounty":
