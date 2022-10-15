@@ -6,10 +6,9 @@ from extract import main as parse_matchfiles
 from extract import parse_xml, RESULT_DIR
 from plots import (
     plot_mmr_hisotry, 
-    display_KD,
     get_KD, 
     display_mmr_KPIs, 
-    display_extraction_rate, 
+    display_fighting_KPIs, 
     effect_on_success_chance, 
 )
 from dotenv import load_dotenv, set_key, find_dotenv
@@ -135,11 +134,7 @@ else:
             )
         else:
             trend_window = 1
-        columns = st.columns(3)
-        with columns[1]:
-            display_KD(matches, trend_window)
-        with columns[2]:
-            display_extraction_rate(matches, trend_window)
+        display_fighting_KPIs(matches, trend_window)
         display_mmr_KPIs(matches, trend_window)
 
         # MMR history

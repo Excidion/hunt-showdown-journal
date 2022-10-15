@@ -18,6 +18,15 @@ import statsmodels.api as sm
 import numpy as np
 
 
+def display_fighting_KPIs(matches, trend_window):
+    columns = st.columns(3)
+    with columns[0]:
+        display_KD(matches, trend_window)
+    with columns[1]:
+        display_extraction_rate(matches, trend_window)
+    with columns[2]:
+        pass
+
 def display_extraction_rate(df, trend_window=3):
     df = get_own_team(df)
     df_old = get_up_to_n_last_matches(df, trend_window)
