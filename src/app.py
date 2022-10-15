@@ -8,10 +8,9 @@ from plots import (
     plot_mmr_hisotry, 
     display_KD,
     get_KD, 
-    display_mmr, 
+    display_mmr_KPIs, 
     display_extraction_rate, 
     effect_on_success_chance, 
-    display_mmr_taken,
 )
 from dotenv import load_dotenv, set_key, find_dotenv
 from glob import glob
@@ -137,13 +136,11 @@ else:
         else:
             trend_window = 1
         columns = st.columns(3)
-        with columns[0]:
-            display_mmr(matches, trend_window)
         with columns[1]:
             display_KD(matches, trend_window)
         with columns[2]:
             display_extraction_rate(matches, trend_window)
-        display_mmr_taken(matches)
+        display_mmr_KPIs(matches, trend_window)
 
         # MMR history
         st.subheader("MMR History")

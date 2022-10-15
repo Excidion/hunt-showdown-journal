@@ -18,16 +18,6 @@ import statsmodels.api as sm
 import numpy as np
 
 
-def display_mmr(df, trend_window=3):
-    mmr = predict_mmr(df)
-    mmr_old = get_my_matches(df)["mmr"].iloc[-(trend_window-1)]
-    st.metric(
-        "MMR",
-        f"~{mmr}",
-        f"{mmr - mmr_old} in last {trend_window} matches",
-        help = "The data only contains the MMR before a match start. But based on your last match, your current MMR can be eastimated."
-    )
-
 def display_extraction_rate(df, trend_window=3):
     df = get_own_team(df)
     df_old = get_up_to_n_last_matches(df, trend_window)
@@ -62,7 +52,8 @@ def get_KD(df, split=False):
         return killed / died
 
 
-def display_mmr_taken(matches):
+def display_mmr_KPIs(matches, trend_window=3):
+    df = matches
     matches = matches.set_index("matchno")
     mine = get_my_matches(matches)["mmr"]
     mine.name = "my_mmr"
@@ -94,12 +85,21 @@ def display_mmr_taken(matches):
  
     columns = st.columns(3)
     with columns[0]:
+        mmr = predict_mmr(df)
+        mmr_old = mine.iloc[-(trend_window-1)]
+        st.metric(
+            "MMR",
+            f"~{mmr}",
+            f"{mmr - mmr_old} in last {trend_window} matches",
+            help = "The data only contains the MMR before a match start. But based on your last match, your current MMR can be eastimated."
+        )
+    with columns[1]:
         st.metric(
             "MMR taken from others",
             value = int(total_mmr_taken),
             help = f"Max. -{int(max_mmr_taken)} from {max_mmr_taken_victim}",
         )
-    with columns[1]:
+    with columns[2]:
         st.metric(
             "Ruined someones day",
             value = f"{int(ranks_taken)}×",
