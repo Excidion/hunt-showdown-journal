@@ -130,7 +130,8 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
         y = "mmr", 
         symbol="numplayers",
         symbol_map={1:"circle", 2:"diamond-wide", 3:"star-triangle-up"},
-        color_discrete_sequence=["white"],
+        color="survival",
+        color_discrete_map={False:"black", True:"white"},
         hover_name = xaxis, 
         hover_data = ["mmr"],
     )
@@ -138,7 +139,7 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
         df, 
         x = xaxis, 
         y = "mmr", 
-        color_discrete_sequence=["black"],
+        color_discrete_sequence=["darkgrey"],
         hover_name = xaxis, 
         hover_data = ["mmr"],
     )
@@ -158,11 +159,15 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
     return fig
 
 
-def effect_on_extraction_chance(matches, minimum_matches=1):
+
+def effect_on_success_chance(matches, target="extracting with a bounty", minimum_matches=3):
     assert minimum_matches <= matches["matchno"].nunique(), "Not enough matches recorded."
     style_pyplot()
     own = matches.loc[matches["ownteam"]].set_index("matchno")
-    y = own.groupby("matchno")["bountyextracted"].max() >= 1
+    if target == "extracting with a bounty":
+        y = own.groupby("matchno")["bountyextracted"].max() >= 1
+    elif target == "surviving":
+        y = own.groupby("matchno")["survival"].sum() >= 1
     X = pd.get_dummies(own["profileid"]).groupby("matchno").sum()
     matches_per_player = X.sum()
     enough_matches = matches_per_player.loc[matches_per_player >= minimum_matches]
@@ -170,8 +175,9 @@ def effect_on_extraction_chance(matches, minimum_matches=1):
     model = sm.Logit(y,X)
     try:
         results = model.fit()
-    except Exception as e: # possible LinAlg Error when too many players and too few matches
-        return effect_on_extraction_chance(matches, minimum_matches+1)
+    except Exception as e:
+        print(f"Error performing analysis with minimum_matches={minimum_matches}: {e}")
+        return effect_on_success_chance(matches, target, minimum_matches+1)
     plt.barh(
         results.params.index,
         results.params,
@@ -189,12 +195,12 @@ def effect_on_extraction_chance(matches, minimum_matches=1):
         label = "uncertainty",
     )
     plt.legend()
-    plt.xlabel("Odds of extracting with a bounty")
+    plt.xlabel(f"Odds of {target}")
     xticks = plt.gca().get_xticks()
     odds = np.exp(xticks)
     if (odds == 0).any() or not np.isfinite(odds).any(): # check if any odds are not sensible
         plt.close() # delete existing plot
-        return effect_on_extraction_chance(matches, minimum_matches+1)
+        return effect_on_success_chance(matches, target, minimum_matches+1)
     plt.xticks(xticks, [f"{round(o)}:1" if o >=1 else f"1:{round(1/o)}" for o in odds])
     id_map = get_profileid_map(matches)
     plt.yticks(plt.gca().get_yticks(), [id_map.get(i) for i in results.params.index])

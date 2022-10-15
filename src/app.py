@@ -10,7 +10,7 @@ from plots import (
     get_KD, 
     display_mmr, 
     display_extraction_rate, 
-    effect_on_extraction_chance, 
+    effect_on_success_chance, 
     display_mmr_taken,
 )
 from dotenv import load_dotenv, set_key, find_dotenv
@@ -174,7 +174,8 @@ else:
         "The amount of matches needed before a player shows up in this analysis can vary.",
         "The algorithm will try to set this requirement as low as possible, while making sure results can be calculated."
     )
-    st.pyplot(effect_on_extraction_chance(matches))
+    target = st.selectbox("Analyze Teammates influence on...", ["extracting with a bounty", "surviving"])
+    st.pyplot(effect_on_success_chance(matches, target))
 
 
     st.markdown("---")
