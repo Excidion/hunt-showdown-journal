@@ -40,11 +40,11 @@ def parse_xml(xml):
     data = xmltodict.parse(xml)
     # cleanup names and transform to usable dict
     data = {x["@name"]: x["@value"] for x in data["Attributes"]["Attr"]}
-    match = get_matche_data(data)
+    match = get_match_data(data)
     match["survival"] = check_survival(data)
     return match
 
-def get_matche_data(data):
+def get_match_data(data):
     kw = "MissionBag"
     data = {x.replace(kw, ""): data[x] for x in data.keys() if kw in x}
     teams = get_teams_data(data)
