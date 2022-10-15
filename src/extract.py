@@ -131,8 +131,7 @@ def string_to_bool(string: str) -> bool:
 
 
 def check_survival(data):
-    accolades = get_accolades(data)
-    return "accolade_extraction" in accolades["category"].unique()
+    return not string_to_bool(data["MissionBagIsHunterDead"])
 
 def get_accolades(data):
     accolades = pd.DataFrame()
