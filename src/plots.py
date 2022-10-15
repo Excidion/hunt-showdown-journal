@@ -175,7 +175,7 @@ def effect_on_success_chance(matches, target="extracting with a bounty", minimum
         results = model.fit()
     except Exception as e:
         print(f"Error performing analysis with minimum_matches={minimum_matches}: {e}")
-        return effect_on_extraction_chance(matches, target, minimum_matches+1)
+        return effect_on_success_chance(matches, target, minimum_matches+1)
     plt.barh(
         results.params.index,
         results.params,
