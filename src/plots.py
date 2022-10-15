@@ -25,7 +25,18 @@ def display_fighting_KPIs(matches, trend_window):
     with columns[1]:
         display_extraction_rate(matches, trend_window)
     with columns[2]:
-        pass
+        display_survival_rate(matches, trend_window)
+
+def display_survival_rate(df, trend_window):
+    df = get_my_matches(df)
+    df_old = get_up_to_n_last_matches(df, trend_window)
+    rate = df.survival.sum() / df.matchno.nunique()
+    rate_old = df_old.survival.sum() / df_old.matchno.nunique()
+    st.metric(
+        "Hunter survived",
+        f"{round(rate * 100)}%",
+        f"{round((rate - rate_old) * 100)}% in last {trend_window} matches"
+    )
 
 def display_extraction_rate(df, trend_window=3):
     df = get_own_team(df)
