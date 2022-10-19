@@ -1,6 +1,6 @@
 import xmltodict
 import pandas as pd
-from pandas.util import hash_pandas_object
+import hashlib
 from glob import glob
 from datetime import datetime
 import os
@@ -21,7 +21,7 @@ def main():
         try:
             data = parse_xml(xml)
             match_hash = create_match_hash(data)
-            assert match_hash not in match_history
+            assert match_hash not in match_history, f"Skipping {path}: No new match."
             sanity_check(data)
         except Exception as e:
             print(f"Could not parse match info from file {path}: {e}")
@@ -110,8 +110,8 @@ def get_players_data(data, teams):
     return players
 
 
-def create_match_hash(*args):
-    return sum([hash_pandas_object(a, index=False) for a in args])
+def create_match_hash(data):
+    return hashlib.sha256(pd.util.hash_pandas_object(data, index=True).values).hexdigest()
 
 
 def sanity_check(data):
