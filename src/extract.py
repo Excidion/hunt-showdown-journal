@@ -41,6 +41,7 @@ def parse_xml(xml):
     data = xmltodict.parse(xml)
     # cleanup names and transform to usable dict
     data = {x["@name"]: x["@value"] for x in data["Attributes"]["Attr"]}
+    assert not string_to_bool(data["MissionBagIsQuickPlay"]), "Skipping quickplay match."
     match = get_match_data(data)
     match["survival"] = check_survival(data)
     return match
