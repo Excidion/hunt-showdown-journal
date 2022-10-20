@@ -21,7 +21,8 @@ def main():
         try:
             data = parse_xml(xml)
             match_hash = create_match_hash(data)
-            assert match_hash not in match_history, f"Not a new match."
+            if match_hash in match_history:
+                continue
             sanity_check(data)
         except Exception as e:
             print(f"Could not parse match info from file {path}: {e}")
@@ -33,6 +34,7 @@ def main():
             timestamp = os.path.splitext(os.path.basename(path))[0].split("_")[-1]
             data["datetime_match_ended"] = datetime.strptime(timestamp, TIMESTAMP_FORMAT)
             matches = pd.concat([matches, data.reset_index()], ignore_index=True)
+            print(f"Successfully extracted matchdata from file: {path}")
     # finish and save
     matches = matches.set_index(["matchno", "teamno", "playerno"])
     matches.to_parquet(os.path.join(RESULT_DIR, "matches.pq"))
