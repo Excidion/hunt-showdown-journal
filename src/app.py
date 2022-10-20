@@ -37,7 +37,7 @@ def start_watcher_process():
 
 
 st.title("Hunt Journal")
-total, single, settings = st.tabs(["Overall Statistics", "Individual Matches", "Settings"])
+total, single, settings = st.tabs(["Overall Statistics", "Individual Match Results", "Match Recorder"])
 
 with settings:
     # starting the game and match recorder
