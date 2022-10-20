@@ -21,7 +21,7 @@ def main():
         try:
             data = parse_xml(xml)
             match_hash = create_match_hash(data)
-            assert match_hash not in match_history, f"Skipping {path}: No new match."
+            assert match_hash not in match_history, f"Not a new match."
             sanity_check(data)
         except Exception as e:
             print(f"Could not parse match info from file {path}: {e}")
