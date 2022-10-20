@@ -1,5 +1,6 @@
 import xmltodict
 import pandas as pd
+import hashlib
 from glob import glob
 from datetime import datetime
 import os
@@ -12,26 +13,26 @@ RESULT_DIR = os.path.join("data", "processed")
 def main():
     matches = pd.DataFrame()
     files = sorted([filepath for filepath in glob(os.path.join(BACKUP_DIR, "*.xml"))])
-    matchno = 0
+    match_history = set()
     for i, path in enumerate(files):
         yield (i/len(files), path)
         with open(path, "r", errors="ignore", encoding="utf-8") as infile:
             xml = infile.read()
         try:
             data = parse_xml(xml)
+            match_hash = create_match_hash(data)
+            assert match_hash not in match_history, f"Skipping {path}: No new match."
             sanity_check(data)
         except Exception as e:
             print(f"Could not parse match info from file {path}: {e}")
         else:
+            matchno = len(match_history)
             data["matchno"] = matchno
-            matchno += 1
+            match_history.add(match_hash)
             # read timestamp from filename
             timestamp = os.path.splitext(os.path.basename(path))[0].split("_")[-1]
             data["datetime_match_ended"] = datetime.strptime(timestamp, TIMESTAMP_FORMAT)
             matches = pd.concat([matches, data.reset_index()], ignore_index=True)
-    # drop duplicates
-    matches = matches.drop_duplicates(subset=matches.columns.difference(["matchno", "datetime_match_ended"]))
-    matches["matchno"] = matches["matchno"].factorize()[0]
     # finish and save
     matches = matches.set_index(["matchno", "teamno", "playerno"])
     matches.to_parquet(os.path.join(RESULT_DIR, "matches.pq"))
@@ -40,11 +41,11 @@ def parse_xml(xml):
     data = xmltodict.parse(xml)
     # cleanup names and transform to usable dict
     data = {x["@name"]: x["@value"] for x in data["Attributes"]["Attr"]}
-    match = get_matche_data(data)
+    match = get_match_data(data)
     match["survival"] = check_survival(data)
     return match
 
-def get_matche_data(data):
+def get_match_data(data):
     kw = "MissionBag"
     data = {x.replace(kw, ""): data[x] for x in data.keys() if kw in x}
     teams = get_teams_data(data)
@@ -107,6 +108,10 @@ def get_players_data(data, teams):
     # join team metatadata
     players = players.set_index(["teamno", "playerno"])
     return players
+
+
+def create_match_hash(data):
+    return hashlib.sha256(pd.util.hash_pandas_object(data, index=True).values).hexdigest()
 
 
 def sanity_check(data):
