@@ -30,9 +30,7 @@ def main():
             matchno = len(match_history)
             data["matchno"] = matchno
             match_history.add(match_hash)
-            # read timestamp from filename
-            timestamp = os.path.splitext(os.path.basename(path))[0].split("_")[-1]
-            data["datetime_match_ended"] = datetime.strptime(timestamp, TIMESTAMP_FORMAT)
+            data["datetime_match_ended"] = extract_datetime(path)
             matches = pd.concat([matches, data.reset_index()], ignore_index=True)
             print(f"Successfully extracted matchdata from file: {path}")
     # finish and save
@@ -159,6 +157,17 @@ def get_accolades(data):
     #     bagentries = pd.concat([bagentries, bdata], ignore_index=True)
     # return pd.concat([accolades, bagentries])
     return accolades
+
+
+def extract_datetime(path):
+    last_edited = datetime.fromtimestamp(os.path.st_mtime(path))
+    try: # read timestamp from filename
+        timestamp = os.path.splitext(os.path.basename(path))[0].split("_")[-1]
+        backed_up = datetime.strptime(timestamp, TIMESTAMP_FORMAT)
+    except: # if it did not work just take 'last edited' date
+        return last_edited
+    else: # chose the chronologically first
+        return min(last_edited, backed_up)
 
 
 if __name__ == "__main__":
