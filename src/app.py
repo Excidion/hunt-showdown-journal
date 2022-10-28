@@ -16,6 +16,15 @@ from glob import glob
 from match_utils import find_my_id, simplify_scoreboard, construct_match_name, predict_mmr
 import subprocess
 import sys
+from utils import set_png_as_page_bg
+
+
+st.set_page_config(
+    page_title = "Hunt Journal",
+    menu_items={
+        'Report a bug': "https://github.com/Excidion/hunt-showdown-journal/issues",
+    }
+)
 
 
 # setup dotenv
@@ -37,6 +46,7 @@ def start_watcher_process():
 
 
 st.title("Hunt Journal")
+set_png_as_page_bg("static/WebPage-background-5.jpg")
 total, single, settings = st.tabs(["Overall Statistics", "Individual Match Results", "Match Recorder"])
 
 with settings:
@@ -153,6 +163,10 @@ else:
                 help = "With setting `End` the last MMR is eastimated."
             )
             mmr_out = mmr_out=="End"
+        st.write(
+            "The color indicates whether you survived the Hunt.",
+            "The shape shows the number of Hunters in your team.",
+        )
         fig = plot_mmr_hisotry(matches, xaxis, mmr_out)
         st.plotly_chart(fig)
 

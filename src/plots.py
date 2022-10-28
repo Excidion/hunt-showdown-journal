@@ -151,7 +151,7 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
         symbol="numplayers",
         symbol_map={1:"circle", 2:"diamond-wide", 3:"star-triangle-up"},
         color="survival",
-        color_discrete_map={False:"black", True:"white"},
+        color_discrete_map={False:"red", True:"springgreen"},
         hover_name = xaxis, 
         hover_data = ["mmr"],
     )
@@ -159,11 +159,12 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
         df, 
         x = xaxis, 
         y = "mmr", 
-        color_discrete_sequence=["darkgrey"],
+        color_discrete_sequence=["black"],
         hover_name = xaxis, 
         hover_data = ["mmr"],
     )
-    colors = px.colors.sequential.Turbo
+    mmr_lines.update_traces(showlegend=False)
+    colors = px.colors.sequential.PuBuGn
     mmr_brackets = px.area(
         levels, 
         x = xaxis, 
@@ -173,9 +174,21 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
         hover_name = "Stars", 
         hover_data = ["mmr"],
     )
+    mmr_brackets.update_traces(showlegend=False)
     fig = go.Figure(data = mmr_brackets.data + mmr_lines.data + mmr.data)
     fig.update_yaxes(range=[df.mmr.min()*0.99, df.mmr.max()*1.01], autorange=False)
-    fig.update_layout(showlegend = False)
+    fig.update_layout(
+        plot_bgcolor = "rgba(0, 0, 0, 0)",
+        paper_bgcolor = "rgba(0, 0, 0, 0)",
+        legend = dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        modebar = dict(bgcolor = 'rgba(0, 0, 0, 0)')
+    )
     return fig
 
 
