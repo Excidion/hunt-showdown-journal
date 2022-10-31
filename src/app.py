@@ -115,12 +115,17 @@ with settings:
             disabled = len(glob("data/raw/*.xml")) == 0,
             help = "Read data form copied matchfiles."
         )
+        check_sanity = st.checkbox(
+            "Check for data integrity", 
+            False,
+            help = "Use some simple heuristics to validate wether the data for each match makes sense. Enable if matches in your hisotry look weird.",
+        )
     if parse_resultfiles:
         placeholder = st.empty()
         with placeholder.container():
             st.write("Parsing Match result files...")
             bar = st.progress(0)
-            for i, path in parse_matchfiles():
+            for i, path in parse_matchfiles(check_sanity):
                 bar.progress(i)
         placeholder.empty()
 

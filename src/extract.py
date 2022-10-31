@@ -10,7 +10,7 @@ from watcher import TIMESTAMP_FORMAT, BACKUP_DIR
 RESULT_DIR = os.path.join("data", "processed")
 
 
-def main():
+def main(check_sanity=True):
     matches = pd.DataFrame()
     files = sorted([filepath for filepath in glob(os.path.join(BACKUP_DIR, "*.xml"))])
     match_history = set()
@@ -23,7 +23,8 @@ def main():
             match_hash = create_match_hash(data)
             if match_hash in match_history:
                 continue
-            sanity_check(data)
+            if check_sanity:
+                sanity_check(data)
         except Exception as e:
             print(f"Could not parse match info from file {path}: {e}")
         else:
