@@ -5,7 +5,8 @@ from glob import glob
 from datetime import datetime
 import os
 from watcher import TIMESTAMP_FORMAT, BACKUP_DIR
-
+from streamlit import cache
+import pickle
 
 RESULT_DIR = os.path.join("data", "processed")
 
@@ -41,6 +42,13 @@ def main(check_sanity=True):
     matches.to_parquet(os.path.join(RESULT_DIR, "matches.pq"))
 
 def parse_xml(xml):
+    data = parse_xml_cached(xml)
+    # clone object since st.cache does not like it when cached returned objects are mutated later
+    data = pickle.loads(pickle.dumps(data)) 
+    return data 
+
+@cache(persist=True, show_spinner=False)
+def parse_xml_cached(xml):
     data = xmltodict.parse(xml)
     # cleanup names and transform to usable dict
     data = {x["@name"]: x["@value"] for x in data["Attributes"]["Attr"]}
@@ -51,7 +59,7 @@ def parse_xml(xml):
 
 def get_match_data(data):
     kw = "MissionBag"
-    data = {x.replace(kw, ""): data[x] for x in data.keys() if kw in x}
+    data = {key.replace(kw, ""): val for key, val in data.items() if kw in key}
     teams = get_teams_data(data)
     players = get_players_data(data, teams)
     match = players.join(teams, rsuffix="_team")
@@ -114,6 +122,7 @@ def get_players_data(data, teams):
     return players
 
 
+@cache(persist=True, show_spinner=False)
 def create_match_hash(data):
     return hashlib.sha256(pd.util.hash_pandas_object(data, index=True).values).hexdigest()
 
