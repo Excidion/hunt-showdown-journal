@@ -3,7 +3,7 @@ from sklearn.linear_model import LinearRegression
 import pandas as pd
 
 
-MMR_BRACKETS = {
+MMR_BRACKETS = { # upper boundaries
     0: 0,
     1: 2000,
     2: 2300,
@@ -15,8 +15,8 @@ MMR_BRACKETS = {
 
 
 def get_mmr_bracket(mmr):
-    for bracket in reversed(sorted(MMR_BRACKETS.keys())):
-        if MMR_BRACKETS[bracket] <= mmr:
+    for bracket in sorted(MMR_BRACKETS.keys()):
+        if MMR_BRACKETS[bracket] > mmr:
             return bracket
 
 def construct_match_name(subset, my_id=""):
