@@ -12,6 +12,7 @@ from match_utils import (
     update_elo_scores,
     get_mmr_bracket,
     MMR_BRACKETS,
+    find_my_id,
 )
 import streamlit as st
 import statsmodels.api as sm
@@ -193,7 +194,7 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
 
 
 
-def effect_on_success_chance(matches, target="extracting with a bounty", minimum_matches=3):
+def effect_on_success_chance(matches, target="extracting with a bounty", include_me=False, minimum_matches=3):
     assert minimum_matches <= matches["matchno"].nunique(), "Not enough matches recorded."
     style_pyplot()
     own = matches.loc[matches["ownteam"]].set_index("matchno")
@@ -207,23 +208,27 @@ def effect_on_success_chance(matches, target="extracting with a bounty", minimum
     X = X[enough_matches.index]
     model = sm.Logit(y,X)
     try:
-        results = model.fit()
+        model = model.fit()
     except Exception as e:
         print(f"Error performing analysis with minimum_matches={minimum_matches}: {e}")
         return effect_on_success_chance(matches, target, minimum_matches+1)
+    conf_int = model.conf_int()
+    results = model.params
+    if not include_me:
+        results = results.drop(find_my_id(matches))
+        conf_int = conf_int.drop(find_my_id(matches))
     plt.barh(
-        results.params.index,
-        results.params,
-        color = ["green" if v>=0 else "red" for v in results.params],
+        results.index,
+        results,
+        color = ["green" if v>=0 else "red" for v in results],
         label = "effect"
     )
-    conf_int = results.conf_int()
     plt.errorbar(
-        y=results.params.index,
-        x=results.params,
+        y=results.index,
+        x=results,
         fmt='o',
         capsize=5,
-        xerr=((results.params-conf_int[0]).abs(), conf_int[1]-results.params),
+        xerr=((results-conf_int[0]).abs(), conf_int[1]-results),
         color = "white",
         label = "uncertainty",
     )
@@ -236,7 +241,7 @@ def effect_on_success_chance(matches, target="extracting with a bounty", minimum
         return effect_on_success_chance(matches, target, minimum_matches+1)
     plt.xticks(xticks, [f"{round(o)}:1" if o >=1 else f"1:{round(1/o)}" for o in odds])
     id_map = get_profileid_map(matches)
-    plt.yticks(plt.gca().get_yticks(), [id_map.get(i) for i in results.params.index])
+    plt.yticks(plt.gca().get_yticks(), [id_map.get(i) for i in results.index])
     plt.title(f"Teammates with at least {minimum_matches} matches together")
     return plt.gcf()
 

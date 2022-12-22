@@ -184,7 +184,14 @@ else:
             "The algorithm will try to set this requirement as low as possible, while making sure results can be calculated."
         )
         target = st.selectbox("Analyze Teammates influence on...", ["extracting with a bounty", "surviving"])
-        st.pyplot(effect_on_success_chance(matches, target))
+        include_me = st.checkbox(
+            "Include myself", 
+            help = """
+                Be aware that your datasset only includes with you.
+                For this reason there is no way to make a distinction between
+            """
+        )
+        st.pyplot(effect_on_success_chance(matches, target, include_me))
 
 
     with single:
