@@ -187,8 +187,10 @@ else:
         include_me = st.checkbox(
             "Include myself", 
             help = """
-                Be aware that your datasset only includes with you.
-                For this reason there is no way to make a distinction between
+                Be aware that your datasset only includes matches with you in them an none without.
+                For this reason there is no way for the algorithm to make a distinction between the base 
+                success odds and your personal influence.
+                For this reason (and some more mathematical ones) your personal effect will probably be very negative.
             """
         )
         st.pyplot(effect_on_success_chance(matches, target, include_me))
