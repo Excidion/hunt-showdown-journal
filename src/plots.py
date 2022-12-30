@@ -211,7 +211,7 @@ def effect_on_success_chance(matches, target="extracting with a bounty", include
         model = model.fit()
     except Exception as e:
         print(f"Error performing analysis with minimum_matches={minimum_matches}: {e}")
-        return effect_on_success_chance(matches, target, minimum_matches+1)
+        return effect_on_success_chance(matches, target, include_me, minimum_matches+1)
     conf_int = model.conf_int()
     results = model.params
     if not include_me:
@@ -238,7 +238,7 @@ def effect_on_success_chance(matches, target="extracting with a bounty", include
     odds = np.exp(xticks)
     if (odds == 0).any() or not np.isfinite(odds).any(): # check if any odds are not sensible
         plt.close() # delete existing plot
-        return effect_on_success_chance(matches, target, minimum_matches+1)
+        return effect_on_success_chance(matches, target, include_me, minimum_matches+1)
     plt.xticks(xticks, [f"{round(o)}:1" if o >=1 else f"1:{round(1/o)}" for o in odds])
     id_map = get_profileid_map(matches)
     plt.yticks(plt.gca().get_yticks(), [id_map.get(i) for i in results.index])
