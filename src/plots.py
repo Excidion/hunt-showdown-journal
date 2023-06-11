@@ -214,6 +214,10 @@ def effect_on_success_chance(matches, target="extracting with a bounty", include
         return effect_on_success_chance(matches, target, include_me, minimum_matches+1)
     conf_int = model.conf_int()
     results = model.params
+    # remove results with error bars far larger than effect
+    errors_too_large = (results-conf_int[0]).abs() > results.abs() * 10
+    results = results.loc[~errors_too_large]
+    conf_int = conf_int.loc[~errors_too_large]
     if not include_me:
         results = results.drop(find_my_id(matches))
         conf_int = conf_int.drop(find_my_id(matches))
