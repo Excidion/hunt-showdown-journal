@@ -35,8 +35,8 @@ def display_survival_rate(df, trend_window):
     rate_old = df_old.survival.sum() / df_old.matchno.nunique()
     st.metric(
         "Hunter survived",
-        f"{round(rate * 100)}%",
-        f"{round((rate - rate_old) * 100)}% in last {trend_window} matches"
+        f"{round(rate * 100, 1)}%",
+        f"{round((rate - rate_old) * 100, 1)}% in last {trend_window} matches"
     )
 
 def display_extraction_rate(df, trend_window=3):
@@ -46,8 +46,8 @@ def display_extraction_rate(df, trend_window=3):
     er_old = get_extraction_rate(df_old)
     st.metric(
         "Min. one bounty extracted",
-        f"{round(er * 100)}%",
-        f"{round((er - er_old) * 100)}% in last {trend_window} matches"
+        f"{round(er * 100, 1)}%",
+        f"{round((er - er_old) * 100, 1)}% in last {trend_window} matches"
     )
 
 def get_extraction_rate(df):
@@ -192,6 +192,29 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
     )
     return fig
 
+
+def plot_match_endings(matches):
+    my = get_my_matches(matches)
+    died = (~my["survival"]).sum()
+    team = matches.loc[matches["ownteam"]].set_index("matchno")
+    survive_with_bounty = (team.loc[team["survival"]].groupby("matchno")["bountyextracted"].max() >= 1).sum()
+    survive_no_bounty = (team.loc[team["survival"]].groupby("matchno")["bountyextracted"].max() == 0).sum()
+    assert sum([survive_with_bounty, survive_no_bounty, died]) == matches["matchno"].nunique()
+    data = pd.DataFrame.from_dict({
+        "Ending": ["Extracted with Bounty", "Survived", "Died"],
+        "n" : [survive_with_bounty, survive_no_bounty, died],
+    })
+    colormap = {
+        "Extracted with Bounty": "springgreen", 
+        "Survived": "#1CFFCE", 
+        "Died": "grey",
+    }
+    fig = px.pie(data, values="n", names="Ending", color="Ending", color_discrete_map=colormap, hole=.5)
+    fig.update_layout(
+        plot_bgcolor = "rgba(0, 0, 0, 0)",
+        paper_bgcolor = "rgba(0, 0, 0, 0)",
+    )
+    return fig
 
 
 def effect_on_success_chance(matches, target="extracting with a bounty", include_me=False, minimum_matches=3):

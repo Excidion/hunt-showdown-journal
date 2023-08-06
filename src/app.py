@@ -10,6 +10,7 @@ from plots import (
     display_mmr_KPIs, 
     display_fighting_KPIs, 
     effect_on_success_chance, 
+    plot_match_endings,
 )
 from dotenv import load_dotenv, set_key, find_dotenv
 from glob import glob
@@ -141,8 +142,8 @@ else:
         n_matches = int(matches["matchno"].nunique())
         if n_matches > 2:
             trend_window = st.slider(
-                "# of new matches for trend",
-                value = min(3, n_matches-2),
+                "Number of recent matches for trend",
+                value = max(2, n_matches//10),
                 min_value = 1,
                 max_value = n_matches-1,
                 step = 1,
@@ -151,6 +152,10 @@ else:
             trend_window = 1
         display_fighting_KPIs(matches, trend_window)
         display_mmr_KPIs(matches, trend_window)
+
+        st.subheader("Match Endings")
+        st.write("The following chart shows how your matches ended for you.")
+        st.plotly_chart(plot_match_endings(matches))
 
         # MMR history
         st.subheader("MMR History")
