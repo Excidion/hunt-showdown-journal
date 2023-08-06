@@ -241,7 +241,7 @@ else:
         for team, subset in selection.groupby("teamno"):
             # style team display
             team_description = f"Team #{team+1} (MMR {subset.mmr_team.unique()[0]})"
-            if subset.ownteam.sum() > 1:
+            if subset.ownteam.sum() > 0:
                 team_description += " - your Team"
             st.caption(team_description)
             subset = simplify_scoreboard(subset)
