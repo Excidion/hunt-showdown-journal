@@ -2,6 +2,8 @@ from plotly import express as px
 import plotly.graph_objects as go
 import pandas as pd
 from matplotlib import pyplot as plt
+import seaborn as sns
+from matplotlib.collections import PatchCollection
 from match_utils import (
     simplify_scoreboard, 
     get_my_matches, 
@@ -213,8 +215,57 @@ def plot_match_endings(matches):
     fig.update_layout(
         plot_bgcolor = "rgba(0, 0, 0, 0)",
         paper_bgcolor = "rgba(0, 0, 0, 0)",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+            title=None,
+        ),
     )
     return fig
+
+
+def plot_team_sizes(matches, metric="matches played"):
+    teamsizes = matches.groupby(["matchno", "teamno"]).size().groupby("matchno").max()
+    teamsizes.name = "enemy_time_size"
+    own = get_own_team(matches)
+    my_team_sizes = own.groupby("matchno").size()
+    my_team_sizes.name = "my_team_size"
+    df = teamsizes.to_frame().join(my_team_sizes)
+    if metric == "extraction rate":
+        bounty = own.groupby("matchno")["bountyextracted"].sum() > 0
+        bounty.name = "bounty_extracted"
+        df = df.join(bounty)
+        success_rate = df.groupby(["enemy_time_size", "my_team_size"])["bounty_extracted"].mean()
+        success_rate.name = "success_rate"
+        data = success_rate.to_frame().reset_index().pivot(index="enemy_time_size", columns="my_team_size")
+    elif metric == "matches played":
+        frequency = df.groupby(["enemy_time_size", "my_team_size"]).size()
+        frequency.name = "frequency"
+        data = frequency.to_frame().reset_index().pivot(index="enemy_time_size", columns="my_team_size")
+    else:
+        survival = own.groupby("matchno")["survival"].sum() > 0
+        survival.name = "survival"
+        df = df.join(survival)
+        success_rate = df.groupby(["enemy_time_size", "my_team_size"])["survival"].mean()
+        success_rate.name = "success_rate"
+        data = success_rate.to_frame().reset_index().pivot(index="enemy_time_size", columns="my_team_size")
+    name_map = {1: "Solo", 2: "Duo", 3: "Trio"}
+    sns.heatmap(
+        data, 
+        annot=True,
+        fmt = ".0f" if metric == "matches played" else '.1%',
+        yticklabels=[f"{name_map.get(y)}s" for y in data.index],
+        xticklabels=[name_map.get(x[1]) for x in data.columns],
+        cbar = False,
+        cmap = "winter",
+    )
+    plt.ylabel("Enemy Teams")
+    plt.xlabel("Your Team")
+    style_pyplot()
+    return plt.gcf()
 
 
 def effect_on_success_chance(matches, target="extracting with a bounty", include_me=False, minimum_matches=3):

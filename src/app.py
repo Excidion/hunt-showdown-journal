@@ -11,6 +11,7 @@ from plots import (
     display_fighting_KPIs, 
     effect_on_success_chance, 
     plot_match_endings,
+    plot_team_sizes,
 )
 from dotenv import load_dotenv, set_key, find_dotenv
 from glob import glob
@@ -18,6 +19,7 @@ from match_utils import find_my_id, simplify_scoreboard, construct_match_name, p
 import subprocess
 import sys
 from utils import set_png_as_page_bg
+from matplotlib import pyplot as plt
 
 
 st.set_page_config(
@@ -153,9 +155,20 @@ else:
         display_fighting_KPIs(matches, trend_window)
         display_mmr_KPIs(matches, trend_window)
 
-        st.subheader("Match Endings")
-        st.write("The following chart shows how your matches ended for you.")
-        st.plotly_chart(plot_match_endings(matches))
+        a, b = st.columns(2)
+        with a:
+            st.subheader("Match Results")
+            st.write("This chart shows how your matches ended for you.")
+            st.plotly_chart(plot_match_endings(matches), use_container_width=True)
+        with b:
+            st.subheader("Team Sizes")
+            st.write(
+                "The matrix below shows different measurement and how they vary depending on the number of team mates and the size of enemy teams.",
+                "Empty fields mean no such match was recorded.",
+            )
+            metric = st.selectbox("Display the ...", ["matches played", "extraction rate", "survival rate"])
+            st.pyplot(plot_team_sizes(matches, metric))
+            plt.close()
 
         # MMR history
         st.subheader("MMR History")
@@ -199,6 +212,7 @@ else:
             """
         )
         st.pyplot(effect_on_success_chance(matches, target, include_me))
+        plt.close()
 
 
     with single:
