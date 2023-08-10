@@ -183,7 +183,7 @@ else:
             mmr_out = st.radio(
                 "MMR at Match...",
                 ["End", "Start"],
-                help = "With setting `End` the last MMR is eastimated."
+                help = "With setting `End` the last MMR is estimated."
             )
             mmr_out = mmr_out=="End"
         st.write(
@@ -234,10 +234,10 @@ else:
                 (matches["profileid"] == my_id),
                 "mmr"
             ].iloc[0]
-            mmr_out_eastimated = False
+            mmr_out_estimated = False
         except IndexError:
             mmr_out = predict_mmr(matches)
-            mmr_out_eastimated = True
+            mmr_out_estimated = True
         
         columns = st.columns(2)
         with columns[0]:
@@ -245,7 +245,7 @@ else:
                 "MMR at match end",
                 value  = int(mmr_out),
                 delta = f"{int(mmr_out - mmr_in)} vs match start",
-                help = "MMR eastimated" if mmr_out_eastimated else None,
+                help = "MMR estimated" if mmr_out_estimated else None,
             )
         kills, deaths = get_KD(selection, split = True)
         kd = round(kills/max(deaths, 1), 2)

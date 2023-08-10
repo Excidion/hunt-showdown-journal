@@ -114,7 +114,7 @@ def display_mmr_KPIs(matches, trend_window=3):
             "MMR",
             f"~{mmr}",
             f"{mmr - mmr_old} in last {trend_window} matches",
-            help = "The data only contains the MMR before a match start. But based on your last match, your current MMR can be eastimated."
+            help = "The data only contains the MMR before a match start. But based on your last match, your current MMR can be estimated."
         )
     with columns[1]:
         st.metric(
