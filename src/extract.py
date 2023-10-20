@@ -124,7 +124,7 @@ def get_players_data(data, teams):
 
 @cache(persist=True, show_spinner=False)
 def create_match_hash(data):
-    return hashlib.sha256(pd.util.hash_pandas_object(data, index=True).values).hexdigest()
+    return hashlib.sha256(pd.util.hash_pandas_object(data[["profileid", "mmr"]], index=False).values).hexdigest()
 
 
 def sanity_check(data):
