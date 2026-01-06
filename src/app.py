@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-from glob import glob
 
 import pandas as pd
 import streamlit as st
@@ -66,11 +65,11 @@ with settings:
     process_alive = st.session_state.get("watcher_process") is not None
     col0, col1 = st.columns(2)
     with col0:
-        start_game = st.button("Play Hunt: Showdown!")
+        start_game = st.button("Play Hunt: Showdown!", disabled=True)
         also_start_filewatcher = st.checkbox(
             label="Start Match Recorder with Game",
             value=tracked_file_is_setup,
-            disabled=not tracked_file_is_setup,
+            disabled=True,  # not tracked_file_is_setup,
             help="Can only be used if matchfile is tracked.",
         )
         if start_game:
@@ -79,7 +78,7 @@ with settings:
             if also_start_filewatcher:
                 start_watcher_process()
     with col1:
-        if st.button("Start Match Recorder", disabled=not tracked_file_is_setup):
+        if st.button("Start Match Recorder", disabled=True):
             start_watcher_process()
 
     st.caption("About the data collection")
@@ -109,13 +108,14 @@ with settings:
                 "attributes.xml",
             ),
             help="The file will be somewhere like `/steamapps/common/Hunt Showdown/user/profiles/default/attributes.xml`",
+            disabled=True,
         )
         try:
             with open(filepath, "r", errors="ignore") as infile:
                 xml = infile.read()
             parse_xml(xml)
         except Exception as e:
-            st.error(f"Invalid Matchfile: {e}")
+            pass
         else:
             st.success("Valid Matchfile.")
             set_key(find_dotenv(), "watched_file", filepath)  # write vars
@@ -133,13 +133,14 @@ with settings:
     with col1:
         parse_resultfiles = st.button(
             label="Calculate Statistics",
-            disabled=len(glob("data/raw/*.xml")) == 0,
+            disabled=True,  # len(glob("data/raw/*.xml")) == 0,
             help="Read data form copied matchfiles.",
         )
         check_sanity = st.checkbox(
             "Check for data integrity",
             False,
             help="Use some simple heuristics to validate wether the data for each match makes sense. Enable if matches in your hisotry look weird.",
+            disabled=True,
         )
     if parse_resultfiles:
         placeholder = st.empty()

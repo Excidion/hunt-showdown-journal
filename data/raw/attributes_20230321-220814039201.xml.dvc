@@ -1,0 +1,5 @@
+outs:
+- md5: a17824b8f864943742db4a81122a1c6a
+  size: 256784
+  hash: md5
+  path: attributes_20230321-220814039201.xml
