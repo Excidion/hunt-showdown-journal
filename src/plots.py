@@ -1,24 +1,25 @@
-from plotly import express as px
-import plotly.graph_objects as go
+import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+import plotly.graph_objects as go
 import seaborn as sns
+import statsmodels.api as sm
+import streamlit as st
+from matplotlib import pyplot as plt
 from matplotlib.collections import PatchCollection
+from plotly import express as px
+
 from match_utils import (
-    simplify_scoreboard, 
-    get_my_matches, 
-    get_own_team, 
-    get_up_to_n_last_matches, 
-    get_profileid_map, 
-    predict_mmr,
-    update_elo_scores,
-    get_mmr_bracket,
     MMR_BRACKETS,
     find_my_id,
+    get_mmr_bracket,
+    get_my_matches,
+    get_own_team,
+    get_profileid_map,
+    get_up_to_n_last_matches,
+    predict_mmr,
+    simplify_scoreboard,
+    update_elo_scores,
 )
-import streamlit as st
-import statsmodels.api as sm
-import numpy as np
 
 
 def display_fighting_KPIs(matches, trend_window):
@@ -30,6 +31,7 @@ def display_fighting_KPIs(matches, trend_window):
     with columns[2]:
         display_survival_rate(matches, trend_window)
 
+
 def display_survival_rate(df, trend_window):
     df = get_my_matches(df)
     df_old = get_up_to_n_last_matches(df, trend_window)
@@ -38,8 +40,9 @@ def display_survival_rate(df, trend_window):
     st.metric(
         "Hunter survived",
         f"{round(rate * 100, 1)}%",
-        f"{round((rate - rate_old) * 100, 1)}% in last {trend_window} matches"
+        f"{round((rate - rate_old) * 100, 1)}% in last {trend_window} matches",
     )
+
 
 def display_extraction_rate(df, trend_window=3):
     df = get_own_team(df)
@@ -49,11 +52,16 @@ def display_extraction_rate(df, trend_window=3):
     st.metric(
         "Min. one bounty extracted",
         f"{round(er * 100, 1)}%",
-        f"{round((er - er_old) * 100, 1)}% in last {trend_window} matches"
+        f"{round((er - er_old) * 100, 1)}% in last {trend_window} matches",
     )
 
+
 def get_extraction_rate(df):
-    return df.groupby("matchno")["bountyextracted"].sum().astype(bool).sum() / df["matchno"].nunique()
+    return (
+        df.groupby("matchno")["bountyextracted"].sum().astype(bool).sum()
+        / df["matchno"].nunique()
+    )
+
 
 def display_KD(df, trend_window=3):
     kd_old = get_KD(get_up_to_n_last_matches(df, trend_window))
@@ -61,8 +69,9 @@ def display_KD(df, trend_window=3):
     st.metric(
         "K/D Ratio",
         round(kd, 2),
-        f"{round(kd - kd_old, 2)} in last {trend_window} matches"
+        f"{round(kd - kd_old, 2)} in last {trend_window} matches",
     )
+
 
 def get_KD(df, split=False):
     df = simplify_scoreboard(df)
@@ -71,7 +80,7 @@ def get_KD(df, split=False):
     if split:
         return killed, died
     else:
-        died = max(died, 1) # treat zero deaths as one to avoid dividing by zero
+        died = max(died, 1)  # treat zero deaths as one to avoid dividing by zero
         return killed / died
 
 
@@ -82,51 +91,71 @@ def display_mmr_KPIs(matches, trend_window=3):
     mine.name = "my_mmr"
     matches = matches.join(mine)
     matches["shotbyme"] = matches[["downedbyme", "killedbyme"]].sum(axis=1)
-    matches["shotme"] = matches[["downedme", "killedme",]].sum(axis=1)
-    matches = matches.loc[(matches["shotbyme"] + matches["shotme"]) > 0] # skip irrelevant
+    matches["shotme"] = matches[
+        [
+            "downedme",
+            "killedme",
+        ]
+    ].sum(axis=1)
+    matches = matches.loc[
+        (matches["shotbyme"] + matches["shotme"]) > 0
+    ]  # skip irrelevant
     total_mmr_taken = 0
     max_mmr_taken = 0
     max_mmr_taken_victim = ""
     ranks_taken = 0
     deranked = set()
     for (matchno, profileid), row in matches.groupby(["matchno", "profileid"]):
-        mmr_taken = update_elo_scores(row["my_mmr"], row["mmr"], 1, return_updated=False) * row["shotbyme"]
+        mmr_taken = (
+            update_elo_scores(row["my_mmr"], row["mmr"], 1, return_updated=False)
+            * row["shotbyme"]
+        )
         mmr_taken = mmr_taken.iloc[0]
         if mmr_taken > 0:
-            mmr_lost = update_elo_scores(row["my_mmr"], row["mmr"], 0, return_updated=False) * row["shotme"]
-            mmr_taken += mmr_lost.iloc[0] # correct for trades (sign is negative by default)
+            mmr_lost = (
+                update_elo_scores(row["my_mmr"], row["mmr"], 0, return_updated=False)
+                * row["shotme"]
+            )
+            mmr_taken += mmr_lost.iloc[
+                0
+            ]  # correct for trades (sign is negative by default)
         if mmr_taken > 0:
             total_mmr_taken += mmr_taken
             if mmr_taken > max_mmr_taken:
                 max_mmr_taken = mmr_taken
-                max_mmr_taken_victim = row["blood_line_name"].iloc[0] + f" (#{matchno+1})"
-            rank_before = get_mmr_bracket(row["mmr"].iloc[0]) 
+                max_mmr_taken_victim = (
+                    row["blood_line_name"].iloc[0] + f" (#{matchno + 1})"
+                )
+            rank_before = get_mmr_bracket(row["mmr"].iloc[0])
             rank_after = get_mmr_bracket(row["mmr"].iloc[0] - mmr_taken)
             if rank_before > rank_after:
                 ranks_taken += rank_before - rank_after
-                deranked.add(row["blood_line_name"].iloc[0] + f" (#{matchno+1}) {rank_before}↘{rank_after}")
- 
+                deranked.add(
+                    row["blood_line_name"].iloc[0]
+                    + f" (#{matchno + 1}) {rank_before}↘{rank_after}"
+                )
+
     columns = st.columns(3)
     with columns[0]:
         mmr = predict_mmr(df)
-        mmr_old = mine.iloc[-(trend_window-1)]
+        mmr_old = mine.iloc[-(trend_window - 1)]
         st.metric(
             "MMR",
             f"~{mmr}",
             f"{mmr - mmr_old} in last {trend_window} matches",
-            help = "The data only contains the MMR before a match start. But based on your last match, your current MMR can be estimated."
+            help="The data only contains the MMR before a match start. But based on your last match, your current MMR can be estimated.",
         )
     with columns[1]:
         st.metric(
             "MMR taken from others",
-            value = int(total_mmr_taken),
-            help = f"Max. -{int(max_mmr_taken)} from {max_mmr_taken_victim}",
+            value=int(total_mmr_taken),
+            help=f"Max. -{int(max_mmr_taken)} from {max_mmr_taken_victim}",
         )
     with columns[2]:
         st.metric(
             "Ruined someones day",
-            value = f"{int(ranks_taken)}×",
-            help = "\n\n".join(list(deranked)),
+            value=f"{int(ranks_taken)}×",
+            help="\n\n".join(list(deranked)),
         )
 
 
@@ -136,11 +165,18 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
     # star rating
     levels = pd.DataFrame()
     levels[xaxis] = df[xaxis]
-    levels = levels.loc[(levels[xaxis] == levels[xaxis].min()) | (levels[xaxis] == levels[xaxis].max())]
+    levels = levels.loc[
+        (levels[xaxis] == levels[xaxis].min()) | (levels[xaxis] == levels[xaxis].max())
+    ]
     levels = levels.reset_index(drop=True)
     for bracket in MMR_BRACKETS.keys():
         levels[str(bracket)] = MMR_BRACKETS.get(bracket)
-    levels = levels.set_index(xaxis).stack().reset_index().rename({"level_1":"Stars", 0:"mmr"}, axis=1)
+    levels = (
+        levels.set_index(xaxis)
+        .stack()
+        .reset_index()
+        .rename({"level_1": "Stars", 0: "mmr"}, axis=1)
+    )
     levels["delta"] = levels["mmr"].diff()
     levels.loc[levels["delta"] < 0, "delta"] = None
     # show mmr at match start or at match end
@@ -148,49 +184,43 @@ def plot_mmr_hisotry(matches, xaxis, mmr_out=False):
         df["mmr"] = df["mmr"].shift(-1)
         df["mmr"].iloc[-1] = predict_mmr(matches)
     mmr = px.scatter(
-        df, 
-        x = xaxis, 
-        y = "mmr", 
+        df,
+        x=xaxis,
+        y="mmr",
         symbol="numplayers",
-        symbol_map={1:"circle", 2:"diamond-wide", 3:"star-triangle-up"},
+        symbol_map={1: "circle", 2: "diamond-wide", 3: "star-triangle-up"},
         color="survival",
-        color_discrete_map={False:"red", True:"springgreen"},
-        hover_name = xaxis, 
-        hover_data = ["mmr"],
+        color_discrete_map={False: "red", True: "springgreen"},
+        hover_name=xaxis,
+        hover_data=["mmr"],
     )
     mmr_lines = px.line(
-        df, 
-        x = xaxis, 
-        y = "mmr", 
+        df,
+        x=xaxis,
+        y="mmr",
         color_discrete_sequence=["black"],
-        hover_name = xaxis, 
-        hover_data = ["mmr"],
+        hover_name=xaxis,
+        hover_data=["mmr"],
     )
     mmr_lines.update_traces(showlegend=False)
     colors = px.colors.sequential.PuBuGn
     mmr_brackets = px.area(
-        levels, 
-        x = xaxis, 
-        y = "delta", 
-        color = "Stars", 
-        color_discrete_sequence = colors[::(len(colors)//levels["Stars"].nunique())],
-        hover_name = "Stars", 
-        hover_data = ["mmr"],
+        levels,
+        x=xaxis,
+        y="delta",
+        color="Stars",
+        color_discrete_sequence=colors[:: (len(colors) // levels["Stars"].nunique())],
+        hover_name="Stars",
+        hover_data=["mmr"],
     )
     mmr_brackets.update_traces(showlegend=False)
-    fig = go.Figure(data = mmr_brackets.data + mmr_lines.data + mmr.data)
-    fig.update_yaxes(range=[df.mmr.min()*0.99, df.mmr.max()*1.01], autorange=False)
+    fig = go.Figure(data=mmr_brackets.data + mmr_lines.data + mmr.data)
+    fig.update_yaxes(range=[df.mmr.min() * 0.99, df.mmr.max() * 1.01], autorange=False)
     fig.update_layout(
-        plot_bgcolor = "rgba(0, 0, 0, 0)",
-        paper_bgcolor = "rgba(0, 0, 0, 0)",
-        legend = dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1
-        ),
-        modebar = dict(bgcolor = 'rgba(0, 0, 0, 0)')
+        plot_bgcolor="rgba(0, 0, 0, 0)",
+        paper_bgcolor="rgba(0, 0, 0, 0)",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        modebar=dict(bgcolor="rgba(0, 0, 0, 0)"),
     )
     return fig
 
@@ -199,22 +229,38 @@ def plot_match_endings(matches):
     my = get_my_matches(matches)
     died = (~my["survival"]).sum()
     team = matches.loc[matches["ownteam"]].set_index("matchno")
-    survive_with_bounty = (team.loc[team["survival"]].groupby("matchno")["bountyextracted"].max() >= 1).sum()
-    survive_no_bounty = (team.loc[team["survival"]].groupby("matchno")["bountyextracted"].max() == 0).sum()
-    assert sum([survive_with_bounty, survive_no_bounty, died]) == matches["matchno"].nunique()
-    data = pd.DataFrame.from_dict({
-        "Ending": ["Extracted with Bounty", "Survived", "Died"],
-        "n" : [survive_with_bounty, survive_no_bounty, died],
-    })
+    survive_with_bounty = (
+        team.loc[team["survival"]].groupby("matchno")["bountyextracted"].max() >= 1
+    ).sum()
+    survive_no_bounty = (
+        team.loc[team["survival"]].groupby("matchno")["bountyextracted"].max() == 0
+    ).sum()
+    assert (
+        sum([survive_with_bounty, survive_no_bounty, died])
+        == matches["matchno"].nunique()
+    )
+    data = pd.DataFrame.from_dict(
+        {
+            "Ending": ["Extracted with Bounty", "Survived", "Died"],
+            "n": [survive_with_bounty, survive_no_bounty, died],
+        }
+    )
     colormap = {
-        "Extracted with Bounty": "springgreen", 
-        "Survived": "#1CFFCE", 
+        "Extracted with Bounty": "springgreen",
+        "Survived": "#1CFFCE",
         "Died": "grey",
     }
-    fig = px.pie(data, values="n", names="Ending", color="Ending", color_discrete_map=colormap, hole=.5)
+    fig = px.pie(
+        data,
+        values="n",
+        names="Ending",
+        color="Ending",
+        color_discrete_map=colormap,
+        hole=0.5,
+    )
     fig.update_layout(
-        plot_bgcolor = "rgba(0, 0, 0, 0)",
-        paper_bgcolor = "rgba(0, 0, 0, 0)",
+        plot_bgcolor="rgba(0, 0, 0, 0)",
+        paper_bgcolor="rgba(0, 0, 0, 0)",
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -238,29 +284,45 @@ def plot_team_sizes(matches, metric="matches played"):
         bounty = own.groupby("matchno")["bountyextracted"].sum() > 0
         bounty.name = "bounty_extracted"
         df = df.join(bounty)
-        success_rate = df.groupby(["enemy_time_size", "my_team_size"])["bounty_extracted"].mean()
+        success_rate = df.groupby(["enemy_time_size", "my_team_size"])[
+            "bounty_extracted"
+        ].mean()
         success_rate.name = "success_rate"
-        data = success_rate.to_frame().reset_index().pivot(index="enemy_time_size", columns="my_team_size")
+        data = (
+            success_rate.to_frame()
+            .reset_index()
+            .pivot(index="enemy_time_size", columns="my_team_size")
+        )
     elif metric == "matches played":
         frequency = df.groupby(["enemy_time_size", "my_team_size"]).size()
         frequency.name = "frequency"
-        data = frequency.to_frame().reset_index().pivot(index="enemy_time_size", columns="my_team_size")
+        data = (
+            frequency.to_frame()
+            .reset_index()
+            .pivot(index="enemy_time_size", columns="my_team_size")
+        )
     else:
         survival = own.groupby("matchno")["survival"].sum() > 0
         survival.name = "survival"
         df = df.join(survival)
-        success_rate = df.groupby(["enemy_time_size", "my_team_size"])["survival"].mean()
+        success_rate = df.groupby(["enemy_time_size", "my_team_size"])[
+            "survival"
+        ].mean()
         success_rate.name = "success_rate"
-        data = success_rate.to_frame().reset_index().pivot(index="enemy_time_size", columns="my_team_size")
+        data = (
+            success_rate.to_frame()
+            .reset_index()
+            .pivot(index="enemy_time_size", columns="my_team_size")
+        )
     name_map = {1: "Solo", 2: "Duo", 3: "Trio"}
     sns.heatmap(
-        data, 
+        data,
         annot=True,
-        fmt = ".0f" if metric == "matches played" else '.1%',
+        fmt=".0f" if metric == "matches played" else ".1%",
         yticklabels=[f"{name_map.get(y)}s" for y in data.index],
         xticklabels=[name_map.get(x[1]) for x in data.columns],
-        cbar = False,
-        cmap = "winter",
+        cbar=False,
+        cmap="winter",
     )
     plt.ylabel("Enemy Teams")
     plt.xlabel("Your Team")
@@ -268,8 +330,12 @@ def plot_team_sizes(matches, metric="matches played"):
     return plt.gcf()
 
 
-def effect_on_success_chance(matches, target="extracting with a bounty", include_me=False, minimum_matches=3):
-    assert minimum_matches <= matches["matchno"].nunique(), "Not enough matches recorded."
+def effect_on_success_chance(
+    matches, target="extracting with a bounty", include_me=False, minimum_matches=3
+):
+    assert minimum_matches <= matches["matchno"].nunique(), (
+        "Not enough matches recorded."
+    )
     style_pyplot()
     own = matches.loc[matches["ownteam"]].set_index("matchno")
     if target == "extracting with a bounty":
@@ -280,16 +346,18 @@ def effect_on_success_chance(matches, target="extracting with a bounty", include
     matches_per_player = X.sum()
     enough_matches = matches_per_player.loc[matches_per_player >= minimum_matches]
     X = X[enough_matches.index]
-    model = sm.Logit(y,X)
+    model = sm.Logit(y, X)
     try:
         model = model.fit()
     except Exception as e:
         print(f"Error performing analysis with minimum_matches={minimum_matches}: {e}")
-        return effect_on_success_chance(matches, target, include_me, minimum_matches+1)
+        return effect_on_success_chance(
+            matches, target, include_me, minimum_matches + 1
+        )
     conf_int = model.conf_int()
     results = model.params
     # remove results with error bars far larger than effect
-    errors_too_large = (results-conf_int[0]).abs() > results.abs() * 10
+    errors_too_large = (results - conf_int[0]).abs() > results.abs() * 10
     results = results.loc[~errors_too_large]
     conf_int = conf_int.loc[~errors_too_large]
     if not include_me:
@@ -298,37 +366,43 @@ def effect_on_success_chance(matches, target="extracting with a bounty", include
     plt.barh(
         results.index,
         results,
-        color = ["green" if v>=0 else "red" for v in results],
-        label = "effect"
+        color=["green" if v >= 0 else "red" for v in results],
+        label="effect",
     )
     plt.errorbar(
         y=results.index,
         x=results,
-        fmt='o',
+        fmt="o",
         capsize=5,
-        xerr=((results-conf_int[0]).abs(), conf_int[1]-results),
-        color = "white",
-        label = "uncertainty",
+        xerr=((results - conf_int[0]).abs(), conf_int[1] - results),
+        color="white",
+        label="uncertainty",
     )
     plt.legend()
     plt.xlabel(f"Odds of {target}")
     xticks = plt.gca().get_xticks()
     odds = np.exp(xticks)
-    if (odds == 0).any() or not np.isfinite(odds).any(): # check if any odds are not sensible
-        plt.close() # delete existing plot
-        return effect_on_success_chance(matches, target, include_me, minimum_matches+1)
-    plt.xticks(xticks, [f"{round(o)}:1" if o >=1 else f"1:{round(1/o)}" for o in odds])
+    if (odds == 0).any() or not np.isfinite(
+        odds
+    ).any():  # check if any odds are not sensible
+        plt.close()  # delete existing plot
+        return effect_on_success_chance(
+            matches, target, include_me, minimum_matches + 1
+        )
+    plt.xticks(
+        xticks, [f"{round(o)}:1" if o >= 1 else f"1:{round(1 / o)}" for o in odds]
+    )
     id_map = get_profileid_map(matches)
     plt.yticks(plt.gca().get_yticks(), [id_map.get(i) for i in results.index])
     plt.title(f"Teammates with at least {minimum_matches} matches together")
     return plt.gcf()
 
+
 def style_pyplot():
     plt.style.use("dark_background")
     fig = plt.gcf()
-    fig.patch.set_facecolor('b')
+    fig.patch.set_facecolor("b")
     fig.patch.set_alpha(0)
     ax = plt.gca()
-    ax.patch.set_facecolor('b')
+    ax.patch.set_facecolor("b")
     ax.patch.set_alpha(0)
-    

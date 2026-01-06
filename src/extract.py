@@ -1,12 +1,14 @@
-import xmltodict
-import pandas as pd
 import hashlib
-from glob import glob
-from datetime import datetime
 import os
-from watcher import TIMESTAMP_FORMAT, BACKUP_DIR
-from streamlit import cache
 import pickle
+from datetime import datetime
+from glob import glob
+
+import pandas as pd
+import xmltodict
+from streamlit import cache_data
+
+from watcher import BACKUP_DIR, TIMESTAMP_FORMAT
 
 RESULT_DIR = os.path.join("data", "processed")
 
@@ -16,7 +18,7 @@ def main(check_sanity=True):
     files = sorted([filepath for filepath in glob(os.path.join(BACKUP_DIR, "*.xml"))])
     match_history = set()
     for i, path in enumerate(files):
-        yield (i/len(files), path)
+        yield (i / len(files), path)
         with open(path, "r", errors="ignore", encoding="utf-8") as infile:
             xml = infile.read()
         try:
@@ -34,28 +36,35 @@ def main(check_sanity=True):
             match_history.add(match_hash)
             # read timestamp from filename
             timestamp = os.path.splitext(os.path.basename(path))[0].split("_")[-1]
-            data["datetime_match_ended"] = datetime.strptime(timestamp, TIMESTAMP_FORMAT)
+            data["datetime_match_ended"] = datetime.strptime(
+                timestamp, TIMESTAMP_FORMAT
+            )
             matches = pd.concat([matches, data.reset_index()], ignore_index=True)
             print(f"Successfully extracted matchdata from file: {path}")
     # finish and save
     matches = matches.set_index(["matchno", "teamno", "playerno"])
     matches.to_parquet(os.path.join(RESULT_DIR, "matches.pq"))
 
+
 def parse_xml(xml):
     data = parse_xml_cached(xml)
     # clone object since st.cache does not like it when cached returned objects are mutated later
-    data = pickle.loads(pickle.dumps(data)) 
-    return data 
+    data = pickle.loads(pickle.dumps(data))
+    return data
 
-@cache(persist=True, show_spinner=False)
+
+@cache_data(persist=True, show_spinner=False)
 def parse_xml_cached(xml):
     data = xmltodict.parse(xml)
     # cleanup names and transform to usable dict
     data = {x["@name"]: x["@value"] for x in data["Attributes"]["Attr"]}
-    assert not string_to_bool(data["MissionBagIsQuickPlay"]), "Skipping quickplay match."
+    assert not string_to_bool(data.get("MissionBagIsQuickPlay", False)), (
+        "Skipping quickplay match."
+    )
     match = get_match_data(data)
     match["survival"] = check_survival(data)
     return match
+
 
 def get_match_data(data):
     kw = "MissionBag"
@@ -65,13 +74,18 @@ def get_match_data(data):
     match = players.join(teams, rsuffix="_team")
     return match
 
+
 def get_teams_data(data):
     n_teams = int(data["NumTeams"])
     teams = pd.DataFrame()
     for team in range(n_teams):
-        tdata = {"_".join(x.split("_")[2::]): data[x] for x in data.keys() if f"Team_{team}" in x}
+        tdata = {
+            "_".join(x.split("_")[2::]): data[x]
+            for x in data.keys()
+            if f"Team_{team}" in x
+        }
         if tdata[""] == "1":
-            del tdata[""] # will be needed anymore
+            del tdata[""]  # will be needed anymore
             tdata["teamno"] = team
             # transform values to lists of length one to ease creating pandas from dict
             tdata = pd.DataFrame.from_dict({key: [tdata[key]] for key in tdata.keys()})
@@ -85,16 +99,23 @@ def get_teams_data(data):
     teams["isinvite"] = teams["isinvite"].apply(string_to_bool)
     return teams
 
+
 def get_players_data(data, teams):
     players = pd.DataFrame()
     for team, subset in teams.groupby("teamno"):
         for player in range(subset["numplayers"].unique()[0]):
-            pdata = {"_".join(x.split("_")[3::]): data[x] for x in data.keys() if f"Player_{team}_{player}" in x}
+            pdata = {
+                "_".join(x.split("_")[3::]): data[x]
+                for x in data.keys()
+                if f"Player_{team}_{player}" in x
+            }
             if len(pdata) != 0:
                 pdata["teamno"] = team
                 pdata["playerno"] = player
                 # transform values to lists of length one to ease creating pandas from dict
-                pdata = pd.DataFrame.from_dict({key: [pdata[key]] for key in pdata.keys()})
+                pdata = pd.DataFrame.from_dict(
+                    {key: [pdata[key]] for key in pdata.keys()}
+                )
                 players = pd.concat([players, pdata], ignore_index=True)
     # dtype conversions
     players["bountyextracted"] = players["bountyextracted"].astype(int)
@@ -114,7 +135,9 @@ def get_players_data(data, teams):
     players["issoulsurvivor"] = players["issoulsurvivor"].apply(string_to_bool)
     players["proximity"] = players["proximity"].apply(string_to_bool)
     players["proximitytome"] = players["proximitytome"].apply(string_to_bool)
-    players["proximitytoteammate"] = players["proximitytoteammate"].apply(string_to_bool)
+    players["proximitytoteammate"] = players["proximitytoteammate"].apply(
+        string_to_bool
+    )
     players["skillbased"] = players["skillbased"].apply(string_to_bool)
     players["teamextraction"] = players["teamextraction"].apply(string_to_bool)
     # join team metatadata
@@ -122,39 +145,53 @@ def get_players_data(data, teams):
     return players
 
 
-@cache(persist=True, show_spinner=False)
+@cache_data(persist=True, show_spinner=False)
 def create_match_hash(data):
-    return hashlib.sha256(pd.util.hash_pandas_object(data[["profileid", "mmr"]], index=False).values).hexdigest()
+    return hashlib.sha256(
+        pd.util.hash_pandas_object(data[["profileid", "mmr"]], index=False).values
+    ).hexdigest()
 
 
 def sanity_check(data):
     data = data.reset_index()
     # counting players
     assert data["profileid"].nunique() <= 12, "Too many players."
-    assert all(data.groupby("profileid")["teamno"].nunique() == 1), "Same player in multiple teams."
-    assert all(data.groupby("teamno")["playerno"].nunique() == data.groupby("teamno")["profileid"].nunique()), "Player-indicies don't match team size."
+    assert all(data.groupby("profileid")["teamno"].nunique() == 1), (
+        "Same player in multiple teams."
+    )
+    assert all(
+        data.groupby("teamno")["playerno"].nunique()
+        == data.groupby("teamno")["profileid"].nunique()
+    ), "Player-indicies don't match team size."
     largest_teamsize = data.groupby("teamno")["profileid"].nunique().max()
     assert largest_teamsize <= 3, "Team too large."
     assert data["ispartner"].sum() <= largest_teamsize, "Too many teammates."
     # couting bounties
-    assert data["bountyextracted"].dropna().astype(int).sum() <= 4, "Too many extracted bounties."
+    assert data["bountyextracted"].dropna().astype(int).sum() <= 4, (
+        "Too many extracted bounties."
+    )
 
 
 def string_to_bool(string: str) -> bool:
-    match(string.casefold()):
-        case 'true':
+    match string.casefold():
+        case "true":
             return True
-        case 'false':
+        case "false":
             return False
 
 
 def check_survival(data):
     return not string_to_bool(data["MissionBagIsHunterDead"])
 
+
 def get_accolades(data):
     accolades = pd.DataFrame()
     for a in range(int(data["MissionBagNumAccolades"])):
-        adata = {"_".join(x.split("_")[2::]): data[x] for x in data.keys() if f"MissionAccoladeEntry_{a}" in x}
+        adata = {
+            "_".join(x.split("_")[2::]): data[x]
+            for x in data.keys()
+            if f"MissionAccoladeEntry_{a}" in x
+        }
         adata = pd.DataFrame.from_dict({key: [adata[key]] for key in adata.keys()})
         adata["entry"] = f"Accolade #{a}"
         accolades = pd.concat([accolades, adata], ignore_index=True)
