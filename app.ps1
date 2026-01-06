@@ -1,2 +1,1 @@
-env\Scripts\activate 
-streamlit run src\app.py
+uv run streamlit run src\app.py
